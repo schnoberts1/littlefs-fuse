@@ -5,7 +5,7 @@
  * Copyright (c) 2017, Arm Limited. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause
  */
-#include "bd/dbc_lfs_rambd.h"
+#include "bd/lfs_rambd.h"
 
 int dbc_lfs_rambd_create(const struct dbc_lfs_config *cfg,
         const struct dbc_lfs_rambd_config *bdcfg) {

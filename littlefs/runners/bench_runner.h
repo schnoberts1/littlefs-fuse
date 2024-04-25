@@ -28,7 +28,7 @@ void bench_stop(void);
 
 
 // note these are indirectly included in any generated files
-#include "bd/dbc_lfs_emubd.h"
+#include "bd/lfs_emubd.h"
 #include <stdio.h>
 
 // give source a chance to define feature macros

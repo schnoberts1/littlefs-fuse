@@ -9,7 +9,7 @@
 #endif
 
 #include "runners/test_runner.h"
-#include "bd/dbc_lfs_emubd.h"
+#include "bd/lfs_emubd.h"
 
 #include <getopt.h>
 #include <sys/types.h>

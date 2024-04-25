@@ -11,8 +11,8 @@
 
 #include "lfs.h"
 #include "lfs_util.h"
-#include "bd/dbc_lfs_rambd.h"
-#include "bd/dbc_lfs_filebd.h"
+#include "bd/lfs_rambd.h"
+#include "bd/lfs_filebd.h"
 
 #ifdef __cplusplus
 extern "C"

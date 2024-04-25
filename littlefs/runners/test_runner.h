@@ -21,7 +21,7 @@ void test_trace(const char *fmt, ...);
 
 
 // note these are indirectly included in any generated files
-#include "bd/dbc_lfs_emubd.h"
+#include "bd/lfs_emubd.h"
 #include <stdio.h>
 
 // give source a chance to define feature macros

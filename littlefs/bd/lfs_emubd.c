@@ -11,7 +11,7 @@
 #define _POSIX_C_SOURCE 199309L
 #endif
 
-#include "bd/dbc_lfs_emubd.h"
+#include "bd/lfs_emubd.h"
 
 #include <stdlib.h>
 #include <fcntl.h>
