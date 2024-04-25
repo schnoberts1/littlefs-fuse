@@ -4,8 +4,8 @@
 #
 # Example:
 # ./scripts/cov.py \
-#     lfs.t.a.gcda lfs_util.t.a.gcda \
-#     -Flfs.c -Flfs_util.c -slines
+#     lfs.t.a.gcda dbc_lfs_util.t.a.gcda \
+#     -Flfs.c -Fdbc_lfs_util.c -slines
 #
 # Copyright (c) 2022, The littlefs authors.
 # Copyright (c) 2020, Arm Limited. All rights reserved.

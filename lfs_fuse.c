@@ -33,22 +33,22 @@
 //
 // Major (top-nibble), incremented on backwards incompatible changes
 // Minor (bottom-nibble), incremented on feature additions
-#define LFS_FUSE_VERSION 0x00020007
-#define LFS_FUSE_VERSION_MAJOR (0xffff & (LFS_FUSE_VERSION >> 16))
-#define LFS_FUSE_VERSION_MINOR (0xffff & (LFS_FUSE_VERSION >>  0))
+#define DBC_LFS_FUSE_VERSION 0x00020007
+#define DBC_LFS_FUSE_VERSION_MAJOR (0xffff & (DBC_LFS_FUSE_VERSION >> 16))
+#define DBC_LFS_FUSE_VERSION_MINOR (0xffff & (DBC_LFS_FUSE_VERSION >>  0))
 
 
 // config and other state
-static struct lfs_config config = {0};
+static struct dbc_lfs_config config = {0};
 static const char *device = NULL;
 static bool stat_ = false;
 static bool format = false;
 static bool migrate = false;
-static lfs_t lfs;
+static dbc_lfs_t lfs;
 
 
 // actual fuse functions
-void lfs_fuse_defaults(struct lfs_config *config) {
+void dbc_lfs_fuse_defaults(struct dbc_lfs_config *config) {
     // default to 512 erase cycles, arbitrary value
     if (!config->block_cycles) {
         config->block_cycles = 512;
@@ -74,7 +74,7 @@ void lfs_fuse_defaults(struct lfs_config *config) {
     }
 }
 
-void *lfs_fuse_init(struct fuse_conn_info *conn) {
+void *dbc_lfs_fuse_init(struct fuse_conn_info *conn) {
     // set that we want to take care of O_TRUNC
     conn->want |= FUSE_CAP_ATOMIC_O_TRUNC;
 
@@ -84,28 +84,28 @@ void *lfs_fuse_init(struct fuse_conn_info *conn) {
     return 0;
 }
 
-int lfs_fuse_stat(void) {
-    int err = lfs_fuse_bd_create(&config, device);
+int dbc_lfs_fuse_stat(void) {
+    int err = dbc_lfs_fuse_bd_create(&config, device);
     if (err) {
         return err;
     }
 
-    lfs_fuse_defaults(&config);
+    dbc_lfs_fuse_defaults(&config);
 
-    err = lfs_mount(&lfs, &config);
+    err = dbc_lfs_mount(&lfs, &config);
     if (err) {
         goto failed;
     }
 
     // get on-disk info
-    struct lfs_fsinfo fsinfo;
-    err = lfs_fs_stat(&lfs, &fsinfo);
+    struct dbc_lfs_fsinfo fsinfo;
+    err = dbc_lfs_fs_stat(&lfs, &fsinfo);
     if (err) {
         goto failed;
     }
 
     // get block usage
-    lfs_ssize_t in_use = lfs_fs_size(&lfs);
+    dbc_lfs_ssize_t in_use = dbc_lfs_fs_size(&lfs);
     if (in_use < 0) {
         err = in_use;
         goto failed;
@@ -130,69 +130,69 @@ int lfs_fuse_stat(void) {
     printf("file_max: %d\n", fsinfo.file_max);
     printf("attr_max: %d\n", fsinfo.attr_max);
 
-    err = lfs_unmount(&lfs);
+    err = dbc_lfs_unmount(&lfs);
 
 failed:
-    lfs_fuse_bd_destroy(&config);
+    dbc_lfs_fuse_bd_destroy(&config);
     return err;
 }
 
-int lfs_fuse_format(void) {
-    int err = lfs_fuse_bd_create(&config, device);
+int dbc_lfs_fuse_format(void) {
+    int err = dbc_lfs_fuse_bd_create(&config, device);
     if (err) {
         return err;
     }
 
-    lfs_fuse_defaults(&config);
+    dbc_lfs_fuse_defaults(&config);
 
-    err = lfs_format(&lfs, &config);
+    err = dbc_lfs_format(&lfs, &config);
 
-    lfs_fuse_bd_destroy(&config);
+    dbc_lfs_fuse_bd_destroy(&config);
     return err;
 }
 
-int lfs_fuse_migrate(void) {
-    int err = lfs_fuse_bd_create(&config, device);
+int dbc_lfs_fuse_migrate(void) {
+    int err = dbc_lfs_fuse_bd_create(&config, device);
     if (err) {
         return err;
     }
 
-    lfs_fuse_defaults(&config);
+    dbc_lfs_fuse_defaults(&config);
 
-    err = lfs_migrate(&lfs, &config);
+    err = dbc_lfs_migrate(&lfs, &config);
 
-    lfs_fuse_bd_destroy(&config);
+    dbc_lfs_fuse_bd_destroy(&config);
     return err;
 }
 
-int lfs_fuse_mount(void) {
-    int err = lfs_fuse_bd_create(&config, device);
+int dbc_lfs_fuse_mount(void) {
+    int err = dbc_lfs_fuse_bd_create(&config, device);
     if (err) {
         return err;
     }
 
-    lfs_fuse_defaults(&config);
+    dbc_lfs_fuse_defaults(&config);
 
-    return lfs_mount(&lfs, &config);
+    return dbc_lfs_mount(&lfs, &config);
 }
 
-void lfs_fuse_destroy(void *eh) {
-    lfs_unmount(&lfs);
-    lfs_fuse_bd_destroy(&config);
+void dbc_lfs_fuse_destroy(void *eh) {
+    dbc_lfs_unmount(&lfs);
+    dbc_lfs_fuse_bd_destroy(&config);
 }
 
-int lfs_fuse_statfs(const char *path, struct statvfs *s) {
+int dbc_lfs_fuse_statfs(const char *path, struct statvfs *s) {
     memset(s, 0, sizeof(struct statvfs));
 
     // get the on-disk name_max from littlefs
-    struct lfs_fsinfo fsinfo;
-    int err = lfs_fs_stat(&lfs, &fsinfo);
+    struct dbc_lfs_fsinfo fsinfo;
+    int err = dbc_lfs_fs_stat(&lfs, &fsinfo);
     if (err) {
         return err;
     }
 
     // get the filesystem block usage from littlefs
-    lfs_ssize_t in_use = lfs_fs_size(&lfs);
+    dbc_lfs_ssize_t in_use = dbc_lfs_fs_size(&lfs);
     if (in_use < 0) {
         return in_use;
     }
@@ -207,43 +207,43 @@ int lfs_fuse_statfs(const char *path, struct statvfs *s) {
     return 0;
 }
 
-static void lfs_fuse_tostat(struct stat *s, struct lfs_info *info) {
+static void dbc_lfs_fuse_tostat(struct stat *s, struct dbc_lfs_info *info) {
     memset(s, 0, sizeof(struct stat));
 
     s->st_size = info->size;
     s->st_mode = S_IRWXU | S_IRWXG | S_IRWXO;
 
     switch (info->type) {
-        case LFS_TYPE_DIR: s->st_mode |= S_IFDIR; break;
-        case LFS_TYPE_REG: s->st_mode |= S_IFREG; break;
+        case DBC_LFS_TYPE_DIR: s->st_mode |= S_IFDIR; break;
+        case DBC_LFS_TYPE_REG: s->st_mode |= S_IFREG; break;
     }
 }
 
-int lfs_fuse_getattr(const char *path, struct stat *s) {
-    struct lfs_info info;
-    int err = lfs_stat(&lfs, path, &info);
+int dbc_lfs_fuse_getattr(const char *path, struct stat *s) {
+    struct dbc_lfs_info info;
+    int err = dbc_lfs_stat(&lfs, path, &info);
     if (err) {
         return err;
     }
 
-    lfs_fuse_tostat(s, &info);
+    dbc_lfs_fuse_tostat(s, &info);
     return 0;
 }
 
-int lfs_fuse_access(const char *path, int mask) {
-    struct lfs_info info;
-    return lfs_stat(&lfs, path, &info);
+int dbc_lfs_fuse_access(const char *path, int mask) {
+    struct dbc_lfs_info info;
+    return dbc_lfs_stat(&lfs, path, &info);
 }
 
-int lfs_fuse_mkdir(const char *path, mode_t mode) {
-    return lfs_mkdir(&lfs, path);
+int dbc_lfs_fuse_mkdir(const char *path, mode_t mode) {
+    return dbc_lfs_mkdir(&lfs, path);
 }
 
-int lfs_fuse_opendir(const char *path, struct fuse_file_info *fi) {
-    lfs_dir_t *dir = malloc(sizeof(lfs_dir_t));
-    memset(dir, 0, sizeof(lfs_dir_t));
+int dbc_lfs_fuse_opendir(const char *path, struct fuse_file_info *fi) {
+    dbc_lfs_dir_t *dir = malloc(sizeof(dbc_lfs_dir_t));
+    memset(dir, 0, sizeof(dbc_lfs_dir_t));
 
-    int err = lfs_dir_open(&lfs, dir, path);
+    int err = dbc_lfs_dir_open(&lfs, dir, path);
     if (err) {
         free(dir);
         return err;
@@ -253,55 +253,55 @@ int lfs_fuse_opendir(const char *path, struct fuse_file_info *fi) {
     return 0;
 }
 
-int lfs_fuse_releasedir(const char *path, struct fuse_file_info *fi) {
-    lfs_dir_t *dir = (lfs_dir_t*)fi->fh;
+int dbc_lfs_fuse_releasedir(const char *path, struct fuse_file_info *fi) {
+    dbc_lfs_dir_t *dir = (dbc_lfs_dir_t*)fi->fh;
 
-    int err = lfs_dir_close(&lfs, dir);
+    int err = dbc_lfs_dir_close(&lfs, dir);
     free(dir);
     return err;
 }
 
-int lfs_fuse_readdir(const char *path, void *buf,
+int dbc_lfs_fuse_readdir(const char *path, void *buf,
         fuse_fill_dir_t filler, off_t offset,
         struct fuse_file_info *fi) {
     
-    lfs_dir_t *dir = (lfs_dir_t*)fi->fh;
+    dbc_lfs_dir_t *dir = (dbc_lfs_dir_t*)fi->fh;
     struct stat s;
-    struct lfs_info info;
+    struct dbc_lfs_info info;
 
     while (true) {
-        int err = lfs_dir_read(&lfs, dir, &info);
+        int err = dbc_lfs_dir_read(&lfs, dir, &info);
         if (err != 1) {
             return err;
         }
 
-        lfs_fuse_tostat(&s, &info);
+        dbc_lfs_fuse_tostat(&s, &info);
         filler(buf, info.name, &s, 0);
     }
 }
 
-int lfs_fuse_rename(const char *from, const char *to) {
-    return lfs_rename(&lfs, from, to);
+int dbc_lfs_fuse_rename(const char *from, const char *to) {
+    return dbc_lfs_rename(&lfs, from, to);
 }
 
-int lfs_fuse_unlink(const char *path) {
-    return lfs_remove(&lfs, path);
+int dbc_lfs_fuse_unlink(const char *path) {
+    return dbc_lfs_remove(&lfs, path);
 }
 
-int lfs_fuse_open(const char *path, struct fuse_file_info *fi) {
-    lfs_file_t *file = malloc(sizeof(lfs_file_t));
-    memset(file, 0, sizeof(lfs_file_t));
+int dbc_lfs_fuse_open(const char *path, struct fuse_file_info *fi) {
+    dbc_lfs_file_t *file = malloc(sizeof(dbc_lfs_file_t));
+    memset(file, 0, sizeof(dbc_lfs_file_t));
 
     int flags = 0;
-    if ((fi->flags & 3) == O_RDONLY) flags |= LFS_O_RDONLY;
-    if ((fi->flags & 3) == O_WRONLY) flags |= LFS_O_WRONLY;
-    if ((fi->flags & 3) == O_RDWR)   flags |= LFS_O_RDWR;
-    if (fi->flags & O_CREAT)         flags |= LFS_O_CREAT;
-    if (fi->flags & O_EXCL)          flags |= LFS_O_EXCL;
-    if (fi->flags & O_TRUNC)         flags |= LFS_O_TRUNC;
-    if (fi->flags & O_APPEND)        flags |= LFS_O_APPEND;
+    if ((fi->flags & 3) == O_RDONLY) flags |= DBC_LFS_O_RDONLY;
+    if ((fi->flags & 3) == O_WRONLY) flags |= DBC_LFS_O_WRONLY;
+    if ((fi->flags & 3) == O_RDWR)   flags |= DBC_LFS_O_RDWR;
+    if (fi->flags & O_CREAT)         flags |= DBC_LFS_O_CREAT;
+    if (fi->flags & O_EXCL)          flags |= DBC_LFS_O_EXCL;
+    if (fi->flags & O_TRUNC)         flags |= DBC_LFS_O_TRUNC;
+    if (fi->flags & O_APPEND)        flags |= DBC_LFS_O_APPEND;
 
-    int err = lfs_file_open(&lfs, file, path, flags);
+    int err = dbc_lfs_file_open(&lfs, file, path, flags);
     if (err) {
         free(file);
         return err;
@@ -311,159 +311,159 @@ int lfs_fuse_open(const char *path, struct fuse_file_info *fi) {
     return 0;
 }
 
-int lfs_fuse_release(const char *path, struct fuse_file_info *fi) {
-    lfs_file_t *file = (lfs_file_t*)fi->fh;
+int dbc_lfs_fuse_release(const char *path, struct fuse_file_info *fi) {
+    dbc_lfs_file_t *file = (dbc_lfs_file_t*)fi->fh;
 
-    int err = lfs_file_close(&lfs, file);
+    int err = dbc_lfs_file_close(&lfs, file);
     free(file);
     return err;
 }
 
-int lfs_fuse_fgetattr(const char *path, struct stat *s,
+int dbc_lfs_fuse_fgetattr(const char *path, struct stat *s,
         struct fuse_file_info *fi) {
-    lfs_file_t *file = (lfs_file_t*)fi->fh;
+    dbc_lfs_file_t *file = (dbc_lfs_file_t*)fi->fh;
 
-    lfs_fuse_tostat(s, &(struct lfs_info){
-        .size = lfs_file_size(&lfs, file),
-        .type = LFS_TYPE_REG,
+    dbc_lfs_fuse_tostat(s, &(struct dbc_lfs_info){
+        .size = dbc_lfs_file_size(&lfs, file),
+        .type = DBC_LFS_TYPE_REG,
     });
 
     return 0;
 }
 
-int lfs_fuse_read(const char *path, char *buf, size_t size,
+int dbc_lfs_fuse_read(const char *path, char *buf, size_t size,
         off_t off, struct fuse_file_info *fi) {
-    lfs_file_t *file = (lfs_file_t*)fi->fh;
+    dbc_lfs_file_t *file = (dbc_lfs_file_t*)fi->fh;
 
-    if (lfs_file_tell(&lfs, file) != off) {
-        lfs_soff_t soff = lfs_file_seek(&lfs, file, off, LFS_SEEK_SET);
+    if (dbc_lfs_file_tell(&lfs, file) != off) {
+        dbc_lfs_soff_t soff = dbc_lfs_file_seek(&lfs, file, off, DBC_LFS_SEEK_SET);
         if (soff < 0) {
             return soff;
         }
     }
 
-    return lfs_file_read(&lfs, file, buf, size);
+    return dbc_lfs_file_read(&lfs, file, buf, size);
 }
 
-int lfs_fuse_write(const char *path, const char *buf, size_t size,
+int dbc_lfs_fuse_write(const char *path, const char *buf, size_t size,
         off_t off, struct fuse_file_info *fi) {
-    lfs_file_t *file = (lfs_file_t*)fi->fh;
+    dbc_lfs_file_t *file = (dbc_lfs_file_t*)fi->fh;
 
-    if (lfs_file_tell(&lfs, file) != off) {
-        lfs_soff_t soff = lfs_file_seek(&lfs, file, off, LFS_SEEK_SET);
+    if (dbc_lfs_file_tell(&lfs, file) != off) {
+        dbc_lfs_soff_t soff = dbc_lfs_file_seek(&lfs, file, off, DBC_LFS_SEEK_SET);
         if (soff < 0) {
             return soff;
         }
     }
 
-    return lfs_file_write(&lfs, file, buf, size);
+    return dbc_lfs_file_write(&lfs, file, buf, size);
 }
 
-int lfs_fuse_fsync(const char *path, int isdatasync,
+int dbc_lfs_fuse_fsync(const char *path, int isdatasync,
         struct fuse_file_info *fi) {
-    lfs_file_t *file = (lfs_file_t*)fi->fh;
-    return lfs_file_sync(&lfs, file);
+    dbc_lfs_file_t *file = (dbc_lfs_file_t*)fi->fh;
+    return dbc_lfs_file_sync(&lfs, file);
 }
 
-int lfs_fuse_flush(const char *path, struct fuse_file_info *fi) {
-    lfs_file_t *file = (lfs_file_t*)fi->fh;
-    return lfs_file_sync(&lfs, file);
+int dbc_lfs_fuse_flush(const char *path, struct fuse_file_info *fi) {
+    dbc_lfs_file_t *file = (dbc_lfs_file_t*)fi->fh;
+    return dbc_lfs_file_sync(&lfs, file);
 }
 
-int lfs_fuse_create(const char *path, mode_t mode, struct fuse_file_info *fi) {
-    int err = lfs_fuse_open(path, fi);
+int dbc_lfs_fuse_create(const char *path, mode_t mode, struct fuse_file_info *fi) {
+    int err = dbc_lfs_fuse_open(path, fi);
     if (err) {
         return err;
     }
 
-    return lfs_fuse_fsync(path, 0, fi);
+    return dbc_lfs_fuse_fsync(path, 0, fi);
 }
 
-int lfs_fuse_ftruncate(const char *path, off_t size,
+int dbc_lfs_fuse_ftruncate(const char *path, off_t size,
         struct fuse_file_info *fi) {
-    lfs_file_t *file = (lfs_file_t*)fi->fh;
-    return lfs_file_truncate(&lfs, file, size);
+    dbc_lfs_file_t *file = (dbc_lfs_file_t*)fi->fh;
+    return dbc_lfs_file_truncate(&lfs, file, size);
 }
 
-int lfs_fuse_truncate(const char *path, off_t size) {
-    lfs_file_t file;
-    int err = lfs_file_open(&lfs, &file, path, LFS_O_WRONLY);
+int dbc_lfs_fuse_truncate(const char *path, off_t size) {
+    dbc_lfs_file_t file;
+    int err = dbc_lfs_file_open(&lfs, &file, path, DBC_LFS_O_WRONLY);
     if (err) {
         return err;
     }
 
-    err = lfs_file_truncate(&lfs, &file, size);
+    err = dbc_lfs_file_truncate(&lfs, &file, size);
     if (err) {
         return err;
     }
 
-    return lfs_file_close(&lfs, &file);
+    return dbc_lfs_file_close(&lfs, &file);
 }
 
 // unsupported functions
-int lfs_fuse_link(const char *from, const char *to) {
+int dbc_lfs_fuse_link(const char *from, const char *to) {
     // not supported, fail
     return -EPERM;
 }
 
-int lfs_fuse_mknod(const char *path, mode_t mode, dev_t dev) {
+int dbc_lfs_fuse_mknod(const char *path, mode_t mode, dev_t dev) {
     // not supported, fail
     return -EPERM;
 }
 
-int lfs_fuse_chmod(const char *path, mode_t mode) {
+int dbc_lfs_fuse_chmod(const char *path, mode_t mode) {
     // not supported, always succeed
     return 0;
 }
 
-int lfs_fuse_chown(const char *path, uid_t uid, gid_t gid) {
+int dbc_lfs_fuse_chown(const char *path, uid_t uid, gid_t gid) {
     // not supported, fail
     return -EPERM;
 }
 
-int lfs_fuse_utimens(const char *path, const struct timespec ts[2]) {
+int dbc_lfs_fuse_utimens(const char *path, const struct timespec ts[2]) {
     // not supported, always succeed
     return 0;
 }
 
-static struct fuse_operations lfs_fuse_ops = {
-    .init       = lfs_fuse_init,
-    .destroy    = lfs_fuse_destroy,
-    .statfs     = lfs_fuse_statfs,
+static struct fuse_operations dbc_lfs_fuse_ops = {
+    .init       = dbc_lfs_fuse_init,
+    .destroy    = dbc_lfs_fuse_destroy,
+    .statfs     = dbc_lfs_fuse_statfs,
 
-    .getattr    = lfs_fuse_getattr,
-    .access     = lfs_fuse_access,
+    .getattr    = dbc_lfs_fuse_getattr,
+    .access     = dbc_lfs_fuse_access,
 
-    .mkdir      = lfs_fuse_mkdir,
-    .rmdir      = lfs_fuse_unlink,
-    .opendir    = lfs_fuse_opendir,
-    .releasedir = lfs_fuse_releasedir,
-    .readdir    = lfs_fuse_readdir,
+    .mkdir      = dbc_lfs_fuse_mkdir,
+    .rmdir      = dbc_lfs_fuse_unlink,
+    .opendir    = dbc_lfs_fuse_opendir,
+    .releasedir = dbc_lfs_fuse_releasedir,
+    .readdir    = dbc_lfs_fuse_readdir,
 
-    .rename     = lfs_fuse_rename,
-    .unlink     = lfs_fuse_unlink,
+    .rename     = dbc_lfs_fuse_rename,
+    .unlink     = dbc_lfs_fuse_unlink,
 
-    .open       = lfs_fuse_open,
-    .create     = lfs_fuse_create,
-    .truncate   = lfs_fuse_truncate,
-    .release    = lfs_fuse_release,
-    .fgetattr   = lfs_fuse_fgetattr,
-    .read       = lfs_fuse_read,
-    .write      = lfs_fuse_write,
-    .fsync      = lfs_fuse_fsync,
-    .flush      = lfs_fuse_flush,
+    .open       = dbc_lfs_fuse_open,
+    .create     = dbc_lfs_fuse_create,
+    .truncate   = dbc_lfs_fuse_truncate,
+    .release    = dbc_lfs_fuse_release,
+    .fgetattr   = dbc_lfs_fuse_fgetattr,
+    .read       = dbc_lfs_fuse_read,
+    .write      = dbc_lfs_fuse_write,
+    .fsync      = dbc_lfs_fuse_fsync,
+    .flush      = dbc_lfs_fuse_flush,
 
-    .link       = lfs_fuse_link,
-    .symlink    = lfs_fuse_link,
-    .mknod      = lfs_fuse_mknod,
-    .chmod      = lfs_fuse_chmod,
-    .chown      = lfs_fuse_chown,
-    .utimens    = lfs_fuse_utimens,
+    .link       = dbc_lfs_fuse_link,
+    .symlink    = dbc_lfs_fuse_link,
+    .mknod      = dbc_lfs_fuse_mknod,
+    .chmod      = dbc_lfs_fuse_chmod,
+    .chown      = dbc_lfs_fuse_chown,
+    .utimens    = dbc_lfs_fuse_utimens,
 };
 
 
 // binding into fuse and general ui
-enum lfs_fuse_keys {
+enum dbc_lfs_fuse_keys {
     KEY_HELP,
     KEY_VERSION,
     KEY_STAT,
@@ -472,8 +472,8 @@ enum lfs_fuse_keys {
     KEY_DISK_VERSION,
 };
 
-#define OPT(t, p) { t, offsetof(struct lfs_config, p), 0}
-static struct fuse_opt lfs_fuse_opts[] = {
+#define OPT(t, p) { t, offsetof(struct dbc_lfs_config, p), 0}
+static struct fuse_opt dbc_lfs_fuse_opts[] = {
     FUSE_OPT_KEY("--stat",      KEY_STAT),
     FUSE_OPT_KEY("--format",    KEY_FORMAT),
     FUSE_OPT_KEY("--migrate",   KEY_MIGRATE),
@@ -522,7 +522,7 @@ static const char help_text[] =
 "    --attr_max             max size of custom attributes (1022)\n"
 "\n";
 
-int lfs_fuse_opt_proc(void *data, const char *arg,
+int dbc_lfs_fuse_opt_proc(void *data, const char *arg,
         int key, struct fuse_args *args) {
 
     // option parsing
@@ -549,18 +549,18 @@ int lfs_fuse_opt_proc(void *data, const char *arg,
         case KEY_HELP:
             fprintf(stderr, help_text, args->argv[0]);
             fuse_opt_add_arg(args, "-ho");
-            fuse_main(args->argc, args->argv, &lfs_fuse_ops, NULL);
+            fuse_main(args->argc, args->argv, &dbc_lfs_fuse_ops, NULL);
             exit(1);
             
         case KEY_VERSION:
             fprintf(stderr, "littlefs-fuse version: v%d.%d\n",
-                LFS_FUSE_VERSION_MAJOR, LFS_FUSE_VERSION_MINOR);
+                DBC_LFS_FUSE_VERSION_MAJOR, DBC_LFS_FUSE_VERSION_MINOR);
             fprintf(stderr, "littlefs version: v%d.%d\n",
-                LFS_VERSION_MAJOR, LFS_VERSION_MINOR);
+                DBC_LFS_VERSION_MAJOR, DBC_LFS_VERSION_MINOR);
             fprintf(stderr, "littlefs disk version: lfs%d.%d\n",
-                LFS_DISK_VERSION_MAJOR, LFS_DISK_VERSION_MINOR);
+                DBC_LFS_DISK_VERSION_MAJOR, DBC_LFS_DISK_VERSION_MINOR);
             fuse_opt_add_arg(args, "--version");
-            fuse_main(args->argc, args->argv, &lfs_fuse_ops, NULL);
+            fuse_main(args->argc, args->argv, &dbc_lfs_fuse_ops, NULL);
             exit(0);
 
         case KEY_DISK_VERSION: {
@@ -631,7 +631,7 @@ int lfs_fuse_opt_proc(void *data, const char *arg,
 int main(int argc, char *argv[]) {
     // parse custom options
     struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
-    fuse_opt_parse(&args, &config, lfs_fuse_opts, lfs_fuse_opt_proc);
+    fuse_opt_parse(&args, &config, dbc_lfs_fuse_opts, dbc_lfs_fuse_opt_proc);
     if (!device) {
         fprintf(stderr, "missing device parameter\n");
         exit(1);
@@ -639,9 +639,9 @@ int main(int argc, char *argv[]) {
 
     if (stat_) {
         // stat time, no mount
-        int err = lfs_fuse_stat();
+        int err = dbc_lfs_fuse_stat();
         if (err) {
-            LFS_ERROR("%s", strerror(-err));
+            DBC_LFS_ERROR("%s", strerror(-err));
             exit(-err);
         }
         exit(0);
@@ -649,9 +649,9 @@ int main(int argc, char *argv[]) {
 
     if (format) {
         // format time, no mount
-        int err = lfs_fuse_format();
+        int err = dbc_lfs_fuse_format();
         if (err) {
-            LFS_ERROR("%s", strerror(-err));
+            DBC_LFS_ERROR("%s", strerror(-err));
             exit(-err);
         }
         exit(0);
@@ -659,18 +659,18 @@ int main(int argc, char *argv[]) {
 
     if (migrate) {
         // migrate time, no mount
-        int err = lfs_fuse_migrate();
+        int err = dbc_lfs_fuse_migrate();
         if (err) {
-            LFS_ERROR("%s", strerror(-err));
+            DBC_LFS_ERROR("%s", strerror(-err));
             exit(-err);
         }
         exit(0);
     }
 
     // go ahead and mount so errors are reported before backgrounding
-    int err = lfs_fuse_mount();
+    int err = dbc_lfs_fuse_mount();
     if (err) {
-        LFS_ERROR("%s", strerror(-err));
+        DBC_LFS_ERROR("%s", strerror(-err));
         exit(-err);
     }
 
@@ -678,9 +678,9 @@ int main(int argc, char *argv[]) {
     fuse_opt_add_arg(&args, "-s");
 
     // enter fuse
-    err = fuse_main(args.argc, args.argv, &lfs_fuse_ops, NULL);
+    err = fuse_main(args.argc, args.argv, &dbc_lfs_fuse_ops, NULL);
     if (err) {
-        lfs_fuse_destroy(NULL);
+        dbc_lfs_fuse_destroy(NULL);
     }
 
     return err;

@@ -71,7 +71,7 @@ else
 CFLAGS += -Os
 endif
 ifdef TRACE
-CFLAGS += -DLFS_YES_TRACE
+CFLAGS += -DDBC_LFS_YES_TRACE
 endif
 ifdef YES_COV
 CFLAGS += --coverage
@@ -526,10 +526,10 @@ $(BUILDDIR)/%.s: %.c
 	$(CC) -S $(CFLAGS) $< -o $@
 
 $(BUILDDIR)/%.c: %.a.c
-	./scripts/prettyasserts.py -p LFS_ASSERT $< -o $@
+	./scripts/prettyasserts.py -p DBC_LFS_ASSERT $< -o $@
 
 $(BUILDDIR)/%.c: $(BUILDDIR)/%.a.c
-	./scripts/prettyasserts.py -p LFS_ASSERT $< -o $@
+	./scripts/prettyasserts.py -p DBC_LFS_ASSERT $< -o $@
 
 $(BUILDDIR)/%.t.a.c: %.toml
 	./scripts/test.py -c $< $(TESTCFLAGS) -o $@

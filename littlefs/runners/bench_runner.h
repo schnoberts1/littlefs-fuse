@@ -8,16 +8,16 @@
 #define BENCH_RUNNER_H
 
 
-// override LFS_TRACE
+// override DBC_LFS_TRACE
 void bench_trace(const char *fmt, ...);
 
-#define LFS_TRACE_(fmt, ...) \
+#define DBC_LFS_TRACE_(fmt, ...) \
     bench_trace("%s:%d:trace: " fmt "%s\n", \
         __FILE__, \
         __LINE__, \
         __VA_ARGS__)
-#define LFS_TRACE(...) LFS_TRACE_(__VA_ARGS__, "")
-#define LFS_EMUBD_TRACE(...) LFS_TRACE_(__VA_ARGS__, "")
+#define DBC_LFS_TRACE(...) DBC_LFS_TRACE_(__VA_ARGS__, "")
+#define DBC_LFS_EMUBD_TRACE(...) DBC_LFS_TRACE_(__VA_ARGS__, "")
 
 // provide BENCH_START/BENCH_STOP macros
 void bench_start(void);
@@ -28,7 +28,7 @@ void bench_stop(void);
 
 
 // note these are indirectly included in any generated files
-#include "bd/lfs_emubd.h"
+#include "bd/dbc_lfs_emubd.h"
 #include <stdio.h>
 
 // give source a chance to define feature macros
@@ -37,7 +37,7 @@ void bench_stop(void);
 
 
 // generated bench configurations
-struct lfs_config;
+struct dbc_lfs_config;
 
 enum bench_flags {
     BENCH_REENTRANT = 0x1,
@@ -58,7 +58,7 @@ struct bench_case {
     const bench_define_t *defines;
 
     bool (*filter)(void);
-    void (*run)(struct lfs_config *cfg);
+    void (*run)(struct dbc_lfs_config *cfg);
 };
 
 struct bench_suite {
@@ -125,16 +125,16 @@ intmax_t bench_define(size_t define);
     BENCH_DEF(ERASE_SIZE,         0) \
     BENCH_DEF(ERASE_COUNT,        (1024*1024)/BLOCK_SIZE) \
     BENCH_DEF(BLOCK_SIZE,         ERASE_SIZE) \
-    BENCH_DEF(BLOCK_COUNT,        ERASE_COUNT/lfs_max(BLOCK_SIZE/ERASE_SIZE,1))\
-    BENCH_DEF(CACHE_SIZE,         lfs_max(64,lfs_max(READ_SIZE,PROG_SIZE))) \
+    BENCH_DEF(BLOCK_COUNT,        ERASE_COUNT/dbc_lfs_max(BLOCK_SIZE/ERASE_SIZE,1))\
+    BENCH_DEF(CACHE_SIZE,         dbc_lfs_max(64,dbc_lfs_max(READ_SIZE,PROG_SIZE))) \
     BENCH_DEF(LOOKAHEAD_SIZE,     16) \
     BENCH_DEF(COMPACT_THRESH,     0) \
     BENCH_DEF(INLINE_MAX,         0) \
     BENCH_DEF(BLOCK_CYCLES,       -1) \
     BENCH_DEF(ERASE_VALUE,        0xff) \
     BENCH_DEF(ERASE_CYCLES,       0) \
-    BENCH_DEF(BADBLOCK_BEHAVIOR,  LFS_EMUBD_BADBLOCK_PROGERROR) \
-    BENCH_DEF(POWERLOSS_BEHAVIOR, LFS_EMUBD_POWERLOSS_NOOP)
+    BENCH_DEF(BADBLOCK_BEHAVIOR,  DBC_LFS_EMUBD_BADBLOCK_PROGERROR) \
+    BENCH_DEF(POWERLOSS_BEHAVIOR, DBC_LFS_EMUBD_POWERLOSS_NOOP)
 
 #define BENCH_GEOMETRY_DEFINE_COUNT 4
 #define BENCH_IMPLICIT_DEFINE_COUNT 15

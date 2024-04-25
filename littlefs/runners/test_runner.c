@@ -9,7 +9,7 @@
 #endif
 
 #include "runners/test_runner.h"
-#include "bd/lfs_emubd.h"
+#include "bd/dbc_lfs_emubd.h"
 
 #include <getopt.h>
 #include <sys/types.h>
@@ -118,11 +118,11 @@ typedef struct test_geometry {
 typedef struct test_powerloss {
     const char *name;
     void (*run)(
-            const lfs_emubd_powercycles_t *cycles,
+            const dbc_lfs_emubd_powercycles_t *cycles,
             size_t cycle_count,
             const struct test_suite *suite,
             const struct test_case *case_);
-    const lfs_emubd_powercycles_t *cycles;
+    const dbc_lfs_emubd_powercycles_t *cycles;
     size_t cycle_count;
 } test_powerloss_t;
 
@@ -130,7 +130,7 @@ typedef struct test_id {
     const char *name;
     const test_define_t *defines;
     size_t define_count;
-    const lfs_emubd_powercycles_t *cycles;
+    const dbc_lfs_emubd_powercycles_t *cycles;
     size_t cycle_count;
 } test_id_t;
 
@@ -310,11 +310,11 @@ void test_define_suite(const struct test_suite *suite) {
             suite->define_names, suite->define_count};
 
     // make sure our cache is large enough
-    if (lfs_max(suite->define_count, TEST_IMPLICIT_DEFINE_COUNT)
+    if (dbc_lfs_max(suite->define_count, TEST_IMPLICIT_DEFINE_COUNT)
             > test_define_cache_count) {
         // align to power of two to avoid any superlinear growth
-        size_t ncount = 1 << lfs_npw2(
-                lfs_max(suite->define_count, TEST_IMPLICIT_DEFINE_COUNT));
+        size_t ncount = 1 << dbc_lfs_npw2(
+                dbc_lfs_max(suite->define_count, TEST_IMPLICIT_DEFINE_COUNT));
         test_define_cache = realloc(test_define_cache, ncount*sizeof(intmax_t));
         test_define_cache_mask = realloc(test_define_cache_mask,
                 sizeof(unsigned)*(
@@ -330,14 +330,14 @@ void test_define_suite(const struct test_suite *suite) {
         size_t permutations = 1;
         for (size_t i = 0; i < test_override_count; i++) {
             for (size_t d = 0;
-                    d < lfs_max(
+                    d < dbc_lfs_max(
                         suite->define_count,
                         TEST_IMPLICIT_DEFINE_COUNT);
                     d++) {
                 // define name match?
                 const char *name = test_define_name(d);
                 if (name && strcmp(name, test_overrides[i].name) == 0) {
-                    count = lfs_max(count, d+1);
+                    count = dbc_lfs_max(count, d+1);
                     permutations *= test_overrides[i].permutations;
                     break;
                 }
@@ -349,7 +349,7 @@ void test_define_suite(const struct test_suite *suite) {
         // make sure our override arrays are big enough
         if (count * permutations > test_override_define_capacity) {
             // align to power of two to avoid any superlinear growth
-            size_t ncapacity = 1 << lfs_npw2(count * permutations);
+            size_t ncapacity = 1 << dbc_lfs_npw2(count * permutations);
             test_override_defines = realloc(
                     test_override_defines,
                     sizeof(test_define_t)*ncapacity);
@@ -364,7 +364,7 @@ void test_define_suite(const struct test_suite *suite) {
         size_t p = 1;
         for (size_t i = 0; i < test_override_count; i++) {
             for (size_t d = 0;
-                    d < lfs_max(
+                    d < dbc_lfs_max(
                         suite->define_count,
                         TEST_IMPLICIT_DEFINE_COUNT);
                     d++) {
@@ -449,9 +449,9 @@ FILE *test_trace_file = NULL;
 uint32_t test_trace_cycles = 0;
 uint64_t test_trace_time = 0;
 uint64_t test_trace_open_time = 0;
-lfs_emubd_sleep_t test_read_sleep = 0.0;
-lfs_emubd_sleep_t test_prog_sleep = 0.0;
-lfs_emubd_sleep_t test_erase_sleep = 0.0;
+dbc_lfs_emubd_sleep_t test_read_sleep = 0.0;
+dbc_lfs_emubd_sleep_t test_prog_sleep = 0.0;
+dbc_lfs_emubd_sleep_t test_erase_sleep = 0.0;
 
 // this determines both the backtrace buffer and the trace printf buffer, if
 // trace ends up interleaved or truncated this may need to be increased
@@ -576,13 +576,13 @@ uint32_t test_prng(uint32_t *state) {
 static void perm_printid(
         const struct test_suite *suite,
         const struct test_case *case_,
-        const lfs_emubd_powercycles_t *cycles,
+        const dbc_lfs_emubd_powercycles_t *cycles,
         size_t cycle_count) {
     (void)suite;
     // case[:permutation[:powercycles]]
     printf("%s:", case_->name);
     for (size_t d = 0;
-            d < lfs_max(
+            d < dbc_lfs_max(
                 suite->define_count,
                 TEST_IMPLICIT_DEFINE_COUNT);
             d++) {
@@ -623,7 +623,7 @@ bool test_seen_insert(
 
     // use the currently set defines
     for (size_t d = 0;
-            d < lfs_max(
+            d < dbc_lfs_max(
                 suite->define_count,
                 TEST_IMPLICIT_DEFINE_COUNT);
             d++) {
@@ -665,12 +665,12 @@ void test_seen_cleanup(test_seen_t *seen) {
 }
 
 static void run_powerloss_none(
-        const lfs_emubd_powercycles_t *cycles,
+        const dbc_lfs_emubd_powercycles_t *cycles,
         size_t cycle_count,
         const struct test_suite *suite,
         const struct test_case *case_);
 static void run_powerloss_cycles(
-        const lfs_emubd_powercycles_t *cycles,
+        const dbc_lfs_emubd_powercycles_t *cycles,
         size_t cycle_count,
         const struct test_suite *suite,
         const struct test_case *case_);
@@ -681,7 +681,7 @@ static void case_forperm(
         const struct test_case *case_,
         const test_define_t *defines,
         size_t define_count,
-        const lfs_emubd_powercycles_t *cycles,
+        const dbc_lfs_emubd_powercycles_t *cycles,
         size_t cycle_count,
         void (*cb)(
             void *data,
@@ -1106,7 +1106,7 @@ void perm_list_defines(
 
     // collect defines
     for (size_t d = 0;
-            d < lfs_max(suite->define_count,
+            d < dbc_lfs_max(suite->define_count,
                 TEST_IMPLICIT_DEFINE_COUNT);
             d++) {
         if (d < TEST_IMPLICIT_DEFINE_COUNT
@@ -1128,7 +1128,7 @@ void perm_list_permutation_defines(
 
     // collect permutation_defines
     for (size_t d = 0;
-            d < lfs_max(suite->define_count,
+            d < dbc_lfs_max(suite->define_count,
                 TEST_IMPLICIT_DEFINE_COUNT);
             d++) {
         if (test_define_ispermutation(d)) {
@@ -1322,7 +1322,7 @@ static void list_geometries(void) {
 // scenarios to run tests under power-loss
 
 static void run_powerloss_none(
-        const lfs_emubd_powercycles_t *cycles,
+        const dbc_lfs_emubd_powercycles_t *cycles,
         size_t cycle_count,
         const struct test_suite *suite,
         const struct test_case *case_) {
@@ -1331,14 +1331,14 @@ static void run_powerloss_none(
     (void)suite;
 
     // create block device and configuration
-    lfs_emubd_t bd;
+    dbc_lfs_emubd_t bd;
 
-    struct lfs_config cfg = {
+    struct dbc_lfs_config cfg = {
         .context            = &bd,
-        .read               = lfs_emubd_read,
-        .prog               = lfs_emubd_prog,
-        .erase              = lfs_emubd_erase,
-        .sync               = lfs_emubd_sync,
+        .read               = dbc_lfs_emubd_read,
+        .prog               = dbc_lfs_emubd_prog,
+        .erase              = dbc_lfs_emubd_erase,
+        .sync               = dbc_lfs_emubd_sync,
         .read_size          = READ_SIZE,
         .prog_size          = PROG_SIZE,
         .block_size         = BLOCK_SIZE,
@@ -1348,12 +1348,12 @@ static void run_powerloss_none(
         .lookahead_size     = LOOKAHEAD_SIZE,
         .compact_thresh     = COMPACT_THRESH,
         .inline_max         = INLINE_MAX,
-    #ifdef LFS_MULTIVERSION
+    #ifdef DBC_LFS_MULTIVERSION
         .disk_version       = DISK_VERSION,
     #endif
     };
 
-    struct lfs_emubd_config bdcfg = {
+    struct dbc_lfs_emubd_config bdcfg = {
         .read_size          = READ_SIZE,
         .prog_size          = PROG_SIZE,
         .erase_size         = ERASE_SIZE,
@@ -1367,7 +1367,7 @@ static void run_powerloss_none(
         .erase_sleep        = test_erase_sleep,
     };
 
-    int err = lfs_emubd_create(&cfg, &bdcfg);
+    int err = dbc_lfs_emubd_create(&cfg, &bdcfg);
     if (err) {
         fprintf(stderr, "error: could not create block device: %d\n", err);
         exit(-1);
@@ -1385,7 +1385,7 @@ static void run_powerloss_none(
     printf("\n");
 
     // cleanup
-    err = lfs_emubd_destroy(&cfg);
+    err = dbc_lfs_emubd_destroy(&cfg);
     if (err) {
         fprintf(stderr, "error: could not destroy block device: %d\n", err);
         exit(-1);
@@ -1398,7 +1398,7 @@ static void powerloss_longjmp(void *c) {
 }
 
 static void run_powerloss_linear(
-        const lfs_emubd_powercycles_t *cycles,
+        const dbc_lfs_emubd_powercycles_t *cycles,
         size_t cycle_count,
         const struct test_suite *suite,
         const struct test_case *case_) {
@@ -1407,16 +1407,16 @@ static void run_powerloss_linear(
     (void)suite;
 
     // create block device and configuration
-    lfs_emubd_t bd;
+    dbc_lfs_emubd_t bd;
     jmp_buf powerloss_jmp;
-    volatile lfs_emubd_powercycles_t i = 1;
+    volatile dbc_lfs_emubd_powercycles_t i = 1;
 
-    struct lfs_config cfg = {
+    struct dbc_lfs_config cfg = {
         .context            = &bd,
-        .read               = lfs_emubd_read,
-        .prog               = lfs_emubd_prog,
-        .erase              = lfs_emubd_erase,
-        .sync               = lfs_emubd_sync,
+        .read               = dbc_lfs_emubd_read,
+        .prog               = dbc_lfs_emubd_prog,
+        .erase              = dbc_lfs_emubd_erase,
+        .sync               = dbc_lfs_emubd_sync,
         .read_size          = READ_SIZE,
         .prog_size          = PROG_SIZE,
         .block_size         = BLOCK_SIZE,
@@ -1426,12 +1426,12 @@ static void run_powerloss_linear(
         .lookahead_size     = LOOKAHEAD_SIZE,
         .compact_thresh     = COMPACT_THRESH,
         .inline_max         = INLINE_MAX,
-    #ifdef LFS_MULTIVERSION
+    #ifdef DBC_LFS_MULTIVERSION
         .disk_version       = DISK_VERSION,
     #endif
     };
 
-    struct lfs_emubd_config bdcfg = {
+    struct dbc_lfs_emubd_config bdcfg = {
         .read_size          = READ_SIZE,
         .prog_size          = PROG_SIZE,
         .erase_size         = ERASE_SIZE,
@@ -1449,7 +1449,7 @@ static void run_powerloss_linear(
         .powerloss_data     = &powerloss_jmp,
     };
 
-    int err = lfs_emubd_create(&cfg, &bdcfg);
+    int err = dbc_lfs_emubd_create(&cfg, &bdcfg);
     if (err) {
         fprintf(stderr, "error: could not create block device: %d\n", err);
         exit(-1);
@@ -1471,13 +1471,13 @@ static void run_powerloss_linear(
         printf("powerloss ");
         perm_printid(suite, case_, NULL, 0);
         printf(":");
-        for (lfs_emubd_powercycles_t j = 1; j <= i; j++) {
+        for (dbc_lfs_emubd_powercycles_t j = 1; j <= i; j++) {
             leb16_print(j);
         }
         printf("\n");
 
         i += 1;
-        lfs_emubd_setpowercycles(&cfg, i);
+        dbc_lfs_emubd_setpowercycles(&cfg, i);
     }
 
     printf("finished ");
@@ -1485,7 +1485,7 @@ static void run_powerloss_linear(
     printf("\n");
 
     // cleanup
-    err = lfs_emubd_destroy(&cfg);
+    err = dbc_lfs_emubd_destroy(&cfg);
     if (err) {
         fprintf(stderr, "error: could not destroy block device: %d\n", err);
         exit(-1);
@@ -1493,7 +1493,7 @@ static void run_powerloss_linear(
 }
 
 static void run_powerloss_log(
-        const lfs_emubd_powercycles_t *cycles,
+        const dbc_lfs_emubd_powercycles_t *cycles,
         size_t cycle_count,
         const struct test_suite *suite,
         const struct test_case *case_) {
@@ -1502,16 +1502,16 @@ static void run_powerloss_log(
     (void)suite;
 
     // create block device and configuration
-    lfs_emubd_t bd;
+    dbc_lfs_emubd_t bd;
     jmp_buf powerloss_jmp;
-    volatile lfs_emubd_powercycles_t i = 1;
+    volatile dbc_lfs_emubd_powercycles_t i = 1;
 
-    struct lfs_config cfg = {
+    struct dbc_lfs_config cfg = {
         .context            = &bd,
-        .read               = lfs_emubd_read,
-        .prog               = lfs_emubd_prog,
-        .erase              = lfs_emubd_erase,
-        .sync               = lfs_emubd_sync,
+        .read               = dbc_lfs_emubd_read,
+        .prog               = dbc_lfs_emubd_prog,
+        .erase              = dbc_lfs_emubd_erase,
+        .sync               = dbc_lfs_emubd_sync,
         .read_size          = READ_SIZE,
         .prog_size          = PROG_SIZE,
         .block_size         = BLOCK_SIZE,
@@ -1521,12 +1521,12 @@ static void run_powerloss_log(
         .lookahead_size     = LOOKAHEAD_SIZE,
         .compact_thresh     = COMPACT_THRESH,
         .inline_max         = INLINE_MAX,
-    #ifdef LFS_MULTIVERSION
+    #ifdef DBC_LFS_MULTIVERSION
         .disk_version       = DISK_VERSION,
     #endif
     };
 
-    struct lfs_emubd_config bdcfg = {
+    struct dbc_lfs_emubd_config bdcfg = {
         .read_size          = READ_SIZE,
         .prog_size          = PROG_SIZE,
         .erase_size         = ERASE_SIZE,
@@ -1544,7 +1544,7 @@ static void run_powerloss_log(
         .powerloss_data     = &powerloss_jmp,
     };
 
-    int err = lfs_emubd_create(&cfg, &bdcfg);
+    int err = dbc_lfs_emubd_create(&cfg, &bdcfg);
     if (err) {
         fprintf(stderr, "error: could not create block device: %d\n", err);
         exit(-1);
@@ -1566,13 +1566,13 @@ static void run_powerloss_log(
         printf("powerloss ");
         perm_printid(suite, case_, NULL, 0);
         printf(":");
-        for (lfs_emubd_powercycles_t j = 1; j <= i; j *= 2) {
+        for (dbc_lfs_emubd_powercycles_t j = 1; j <= i; j *= 2) {
             leb16_print(j);
         }
         printf("\n");
 
         i *= 2;
-        lfs_emubd_setpowercycles(&cfg, i);
+        dbc_lfs_emubd_setpowercycles(&cfg, i);
     }
 
     printf("finished ");
@@ -1580,7 +1580,7 @@ static void run_powerloss_log(
     printf("\n");
 
     // cleanup
-    err = lfs_emubd_destroy(&cfg);
+    err = dbc_lfs_emubd_destroy(&cfg);
     if (err) {
         fprintf(stderr, "error: could not destroy block device: %d\n", err);
         exit(-1);
@@ -1588,23 +1588,23 @@ static void run_powerloss_log(
 }
 
 static void run_powerloss_cycles(
-        const lfs_emubd_powercycles_t *cycles,
+        const dbc_lfs_emubd_powercycles_t *cycles,
         size_t cycle_count,
         const struct test_suite *suite,
         const struct test_case *case_) {
     (void)suite;
 
     // create block device and configuration
-    lfs_emubd_t bd;
+    dbc_lfs_emubd_t bd;
     jmp_buf powerloss_jmp;
     volatile size_t i = 0;
 
-    struct lfs_config cfg = {
+    struct dbc_lfs_config cfg = {
         .context            = &bd,
-        .read               = lfs_emubd_read,
-        .prog               = lfs_emubd_prog,
-        .erase              = lfs_emubd_erase,
-        .sync               = lfs_emubd_sync,
+        .read               = dbc_lfs_emubd_read,
+        .prog               = dbc_lfs_emubd_prog,
+        .erase              = dbc_lfs_emubd_erase,
+        .sync               = dbc_lfs_emubd_sync,
         .read_size          = READ_SIZE,
         .prog_size          = PROG_SIZE,
         .block_size         = BLOCK_SIZE,
@@ -1614,12 +1614,12 @@ static void run_powerloss_cycles(
         .lookahead_size     = LOOKAHEAD_SIZE,
         .compact_thresh     = COMPACT_THRESH,
         .inline_max         = INLINE_MAX,
-    #ifdef LFS_MULTIVERSION
+    #ifdef DBC_LFS_MULTIVERSION
         .disk_version       = DISK_VERSION,
     #endif
     };
 
-    struct lfs_emubd_config bdcfg = {
+    struct dbc_lfs_emubd_config bdcfg = {
         .read_size          = READ_SIZE,
         .prog_size          = PROG_SIZE,
         .erase_size         = ERASE_SIZE,
@@ -1637,7 +1637,7 @@ static void run_powerloss_cycles(
         .powerloss_data     = &powerloss_jmp,
     };
 
-    int err = lfs_emubd_create(&cfg, &bdcfg);
+    int err = dbc_lfs_emubd_create(&cfg, &bdcfg);
     if (err) {
         fprintf(stderr, "error: could not create block device: %d\n", err);
         exit(-1);
@@ -1662,7 +1662,7 @@ static void run_powerloss_cycles(
         printf("\n");
 
         i += 1;
-        lfs_emubd_setpowercycles(&cfg,
+        dbc_lfs_emubd_setpowercycles(&cfg,
                 (i < cycle_count) ? cycles[i] : 0);
     }
 
@@ -1671,7 +1671,7 @@ static void run_powerloss_cycles(
     printf("\n");
 
     // cleanup
-    err = lfs_emubd_destroy(&cfg);
+    err = dbc_lfs_emubd_destroy(&cfg);
     if (err) {
         fprintf(stderr, "error: could not destroy block device: %d\n", err);
         exit(-1);
@@ -1679,15 +1679,15 @@ static void run_powerloss_cycles(
 }
 
 struct powerloss_exhaustive_state {
-    struct lfs_config *cfg;
+    struct dbc_lfs_config *cfg;
 
-    lfs_emubd_t *branches;
+    dbc_lfs_emubd_t *branches;
     size_t branch_count;
     size_t branch_capacity;
 };
 
 struct powerloss_exhaustive_cycles {
-    lfs_emubd_powercycles_t *cycles;
+    dbc_lfs_emubd_powercycles_t *cycles;
     size_t cycle_count;
     size_t cycle_capacity;
 };
@@ -1695,9 +1695,9 @@ struct powerloss_exhaustive_cycles {
 static void powerloss_exhaustive_branch(void *c) {
     struct powerloss_exhaustive_state *state = c;
     // append to branches
-    lfs_emubd_t *branch = mappend(
+    dbc_lfs_emubd_t *branch = mappend(
             (void**)&state->branches,
-            sizeof(lfs_emubd_t),
+            sizeof(dbc_lfs_emubd_t),
             &state->branch_count,
             &state->branch_capacity);
     if (!branch) {
@@ -1706,22 +1706,22 @@ static void powerloss_exhaustive_branch(void *c) {
     }
 
     // create copy-on-write copy
-    int err = lfs_emubd_copy(state->cfg, branch);
+    int err = dbc_lfs_emubd_copy(state->cfg, branch);
     if (err) {
         fprintf(stderr, "error: exhaustive: could not create bd copy\n");
         exit(-1);
     }
 
     // also trigger on next power cycle
-    lfs_emubd_setpowercycles(state->cfg, 1);
+    dbc_lfs_emubd_setpowercycles(state->cfg, 1);
 }
 
 static void run_powerloss_exhaustive_layer(
         struct powerloss_exhaustive_cycles *cycles,
         const struct test_suite *suite,
         const struct test_case *case_,
-        struct lfs_config *cfg,
-        struct lfs_emubd_config *bdcfg,
+        struct dbc_lfs_config *cfg,
+        struct dbc_lfs_emubd_config *bdcfg,
         size_t depth) {
     (void)suite;
 
@@ -1734,14 +1734,14 @@ static void run_powerloss_exhaustive_layer(
 
     // run through the test without additional powerlosses, collecting possible
     // branches as we do so
-    lfs_emubd_setpowercycles(state.cfg, depth > 0 ? 1 : 0);
+    dbc_lfs_emubd_setpowercycles(state.cfg, depth > 0 ? 1 : 0);
     bdcfg->powerloss_data = &state;
 
     // run the tests
     case_->run(cfg);
 
     // aggressively clean up memory here to try to keep our memory usage low
-    int err = lfs_emubd_destroy(cfg);
+    int err = dbc_lfs_emubd_destroy(cfg);
     if (err) {
         fprintf(stderr, "error: could not destroy block device: %d\n", err);
         exit(-1);
@@ -1750,9 +1750,9 @@ static void run_powerloss_exhaustive_layer(
     // recurse into each branch
     for (size_t i = 0; i < state.branch_count; i++) {
         // first push and print the branch
-        lfs_emubd_powercycles_t *cycle = mappend(
+        dbc_lfs_emubd_powercycles_t *cycle = mappend(
                 (void**)&cycles->cycles,
-                sizeof(lfs_emubd_powercycles_t),
+                sizeof(dbc_lfs_emubd_powercycles_t),
                 &cycles->cycle_count,
                 &cycles->cycle_capacity);
         if (!cycle) {
@@ -1780,7 +1780,7 @@ static void run_powerloss_exhaustive_layer(
 }
 
 static void run_powerloss_exhaustive(
-        const lfs_emubd_powercycles_t *cycles,
+        const dbc_lfs_emubd_powercycles_t *cycles,
         size_t cycle_count,
         const struct test_suite *suite,
         const struct test_case *case_) {
@@ -1788,14 +1788,14 @@ static void run_powerloss_exhaustive(
     (void)suite;
 
     // create block device and configuration
-    lfs_emubd_t bd;
+    dbc_lfs_emubd_t bd;
 
-    struct lfs_config cfg = {
+    struct dbc_lfs_config cfg = {
         .context            = &bd,
-        .read               = lfs_emubd_read,
-        .prog               = lfs_emubd_prog,
-        .erase              = lfs_emubd_erase,
-        .sync               = lfs_emubd_sync,
+        .read               = dbc_lfs_emubd_read,
+        .prog               = dbc_lfs_emubd_prog,
+        .erase              = dbc_lfs_emubd_erase,
+        .sync               = dbc_lfs_emubd_sync,
         .read_size          = READ_SIZE,
         .prog_size          = PROG_SIZE,
         .block_size         = BLOCK_SIZE,
@@ -1805,12 +1805,12 @@ static void run_powerloss_exhaustive(
         .lookahead_size     = LOOKAHEAD_SIZE,
         .compact_thresh     = COMPACT_THRESH,
         .inline_max         = INLINE_MAX,
-    #ifdef LFS_MULTIVERSION
+    #ifdef DBC_LFS_MULTIVERSION
         .disk_version       = DISK_VERSION,
     #endif
     };
 
-    struct lfs_emubd_config bdcfg = {
+    struct dbc_lfs_emubd_config bdcfg = {
         .read_size          = READ_SIZE,
         .prog_size          = PROG_SIZE,
         .erase_size         = ERASE_SIZE,
@@ -1827,7 +1827,7 @@ static void run_powerloss_exhaustive(
         .powerloss_data     = NULL,
     };
 
-    int err = lfs_emubd_create(&cfg, &bdcfg);
+    int err = dbc_lfs_emubd_create(&cfg, &bdcfg);
     if (err) {
         fprintf(stderr, "error: could not create block device: %d\n", err);
         exit(-1);
@@ -2316,7 +2316,7 @@ invalid_define:
 
                     // comma-separated read/prog/erase/count
                     if (*optarg == '{') {
-                        lfs_size_t sizes[4];
+                        dbc_lfs_size_t sizes[4];
                         size_t count = 0;
 
                         char *s = optarg + 1;
@@ -2365,7 +2365,7 @@ invalid_define:
 
                     // leb16-encoded read/prog/erase/count
                     if (*optarg == ':') {
-                        lfs_size_t sizes[4];
+                        dbc_lfs_size_t sizes[4];
                         size_t count = 0;
 
                         char *s = optarg + 1;
@@ -2461,16 +2461,16 @@ geometry_next:
 
                     // comma-separated permutation
                     if (*optarg == '{') {
-                        lfs_emubd_powercycles_t *cycles = NULL;
+                        dbc_lfs_emubd_powercycles_t *cycles = NULL;
                         size_t cycle_count = 0;
                         size_t cycle_capacity = 0;
 
                         char *s = optarg + 1;
                         while (true) {
                             char *parsed = NULL;
-                            *(lfs_emubd_powercycles_t*)mappend(
+                            *(dbc_lfs_emubd_powercycles_t*)mappend(
                                     (void**)&cycles,
-                                    sizeof(lfs_emubd_powercycles_t),
+                                    sizeof(dbc_lfs_emubd_powercycles_t),
                                     &cycle_count,
                                     &cycle_capacity)
                                     = strtoumax(s, &parsed, 0);
@@ -2498,7 +2498,7 @@ geometry_next:
 
                     // leb16-encoded permutation
                     if (*optarg == ':') {
-                        lfs_emubd_powercycles_t *cycles = NULL;
+                        dbc_lfs_emubd_powercycles_t *cycles = NULL;
                         size_t cycle_count = 0;
                         size_t cycle_capacity = 0;
 
@@ -2510,9 +2510,9 @@ geometry_next:
                                 break;
                             }
 
-                            *(lfs_emubd_powercycles_t*)mappend(
+                            *(dbc_lfs_emubd_powercycles_t*)mappend(
                                     (void**)&cycles,
-                                    sizeof(lfs_emubd_powercycles_t),
+                                    sizeof(dbc_lfs_emubd_powercycles_t),
                                     &cycle_count,
                                     &cycle_capacity) = x;
                             s = parsed;
@@ -2691,7 +2691,7 @@ getopt_done: ;
     for (; argc > optind; optind++) {
         test_define_t *defines = NULL;
         size_t define_count = 0;
-        lfs_emubd_powercycles_t *cycles = NULL;
+        dbc_lfs_emubd_powercycles_t *cycles = NULL;
         size_t cycle_count = 0;
 
         // parse name, can be suite or case
@@ -2732,7 +2732,7 @@ getopt_done: ;
 
                 if (d >= define_count) {
                     // align to power of two to avoid any superlinear growth
-                    size_t ncount = 1 << lfs_npw2(d+1);
+                    size_t ncount = 1 << dbc_lfs_npw2(d+1);
                     defines = realloc(defines,
                             ncount*sizeof(test_define_t));
                     memset(defines+define_count, 0,
@@ -2747,9 +2747,9 @@ getopt_done: ;
                 size_t cycle_capacity = 0;
                 while (*cycles_ != '\0') {
                     char *parsed = NULL;
-                    *(lfs_emubd_powercycles_t*)mappend(
+                    *(dbc_lfs_emubd_powercycles_t*)mappend(
                             (void**)&cycles,
-                            sizeof(lfs_emubd_powercycles_t),
+                            sizeof(dbc_lfs_emubd_powercycles_t),
                             &cycle_count,
                             &cycle_capacity)
                             = leb16_parse(cycles_, &parsed);

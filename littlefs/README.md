@@ -35,11 +35,11 @@ of how many times it has been booted and without corrupting the filesystem:
 #include "lfs.h"
 
 // variables used by the filesystem
-lfs_t lfs;
-lfs_file_t file;
+dbc_lfs_t lfs;
+dbc_lfs_file_t file;
 
 // configuration of the filesystem is provided by this struct
-const struct lfs_config cfg = {
+const struct dbc_lfs_config cfg = {
     // block device operations
     .read  = user_provided_block_device_read,
     .prog  = user_provided_block_device_prog,
@@ -59,30 +59,30 @@ const struct lfs_config cfg = {
 // entry point
 int main(void) {
     // mount the filesystem
-    int err = lfs_mount(&lfs, &cfg);
+    int err = dbc_lfs_mount(&lfs, &cfg);
 
     // reformat if we can't mount the filesystem
     // this should only happen on the first boot
     if (err) {
-        lfs_format(&lfs, &cfg);
-        lfs_mount(&lfs, &cfg);
+        dbc_lfs_format(&lfs, &cfg);
+        dbc_lfs_mount(&lfs, &cfg);
     }
 
     // read current count
     uint32_t boot_count = 0;
-    lfs_file_open(&lfs, &file, "boot_count", LFS_O_RDWR | LFS_O_CREAT);
-    lfs_file_read(&lfs, &file, &boot_count, sizeof(boot_count));
+    dbc_lfs_file_open(&lfs, &file, "boot_count", DBC_LFS_O_RDWR | DBC_LFS_O_CREAT);
+    dbc_lfs_file_read(&lfs, &file, &boot_count, sizeof(boot_count));
 
     // update boot count
     boot_count += 1;
-    lfs_file_rewind(&lfs, &file);
-    lfs_file_write(&lfs, &file, &boot_count, sizeof(boot_count));
+    dbc_lfs_file_rewind(&lfs, &file);
+    dbc_lfs_file_write(&lfs, &file, &boot_count, sizeof(boot_count));
 
     // remember the storage is not updated until the file is closed successfully
-    lfs_file_close(&lfs, &file);
+    dbc_lfs_file_close(&lfs, &file);
 
     // release any resources we were using
-    lfs_unmount(&lfs);
+    dbc_lfs_unmount(&lfs);
 
     // print the boot count
     printf("boot_count: %d\n", boot_count);
@@ -100,9 +100,9 @@ device operations and dimensions, tweakable parameters that tradeoff memory
 usage for performance, and optional static buffers if the user wants to avoid
 dynamic memory.
 
-The state of the littlefs is stored in the `lfs_t` type which is left up
+The state of the littlefs is stored in the `dbc_lfs_t` type which is left up
 to the user to allocate, allowing multiple filesystems to be in use
-simultaneously. With the `lfs_t` and configuration struct, a user can
+simultaneously. With the `dbc_lfs_t` and configuration struct, a user can
 format a block device or mount the filesystem.
 
 Once mounted, the littlefs provides a full set of POSIX-like file and
@@ -119,11 +119,11 @@ Littlefs is written in C, and specifically should compile with any compiler
 that conforms to the `C99` standard.
 
 All littlefs calls have the potential to return a negative error code. The
-errors can be either one of those found in the `enum lfs_error` in
+errors can be either one of those found in the `enum dbc_lfs_error` in
 [lfs.h](lfs.h), or an error returned by the user's block device operations.
 
 In the configuration struct, the `prog` and `erase` function provided by the
-user may return a `LFS_ERR_CORRUPT` error if the implementation already can
+user may return a `DBC_LFS_ERR_CORRUPT` error if the implementation already can
 detect corrupt blocks. However, the wear leveling does not depend on the return
 code of these functions, instead all data is read back and checked for
 integrity.
@@ -192,7 +192,7 @@ More details on how littlefs works can be found in [DESIGN.md](DESIGN.md) and
 ## Testing
 
 The littlefs comes with a test suite designed to run on a PC using the
-[emulated block device](bd/lfs_testbd.h) found in the `bd` directory.
+[emulated block device](bd/dbc_lfs_testbd.h) found in the `bd` directory.
 The tests assume a Linux environment and can be started with make:
 
 ``` bash

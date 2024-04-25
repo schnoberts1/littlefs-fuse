@@ -23,7 +23,7 @@
 
 
 // Block device wrapper for user-space block devices
-int lfs_fuse_bd_create(struct lfs_config *cfg, const char *path) {
+int dbc_lfs_fuse_bd_create(struct dbc_lfs_config *cfg, const char *path) {
     int fd = open(path, O_RDWR);
     if (fd < 0) {
         return -errno;
@@ -51,21 +51,21 @@ int lfs_fuse_bd_create(struct lfs_config *cfg, const char *path) {
     }
 
     // setup function pointers
-    cfg->read  = lfs_fuse_bd_read;
-    cfg->prog  = lfs_fuse_bd_prog;
-    cfg->erase = lfs_fuse_bd_erase;
-    cfg->sync  = lfs_fuse_bd_sync;
+    cfg->read  = dbc_lfs_fuse_bd_read;
+    cfg->prog  = dbc_lfs_fuse_bd_prog;
+    cfg->erase = dbc_lfs_fuse_bd_erase;
+    cfg->sync  = dbc_lfs_fuse_bd_sync;
 
     return 0;
 }
 
-void lfs_fuse_bd_destroy(const struct lfs_config *cfg) {
+void dbc_lfs_fuse_bd_destroy(const struct dbc_lfs_config *cfg) {
     int fd = (intptr_t)cfg->context;
     close(fd);
 }
 
-int lfs_fuse_bd_read(const struct lfs_config *cfg, lfs_block_t block,
-        lfs_off_t off, void *buffer, lfs_size_t size) {
+int dbc_lfs_fuse_bd_read(const struct dbc_lfs_config *cfg, dbc_lfs_block_t block,
+        dbc_lfs_off_t off, void *buffer, dbc_lfs_size_t size) {
     int fd = (intptr_t)cfg->context;
     uint8_t *buffer_ = buffer;
 
@@ -92,8 +92,8 @@ int lfs_fuse_bd_read(const struct lfs_config *cfg, lfs_block_t block,
     return 0;
 }
 
-int lfs_fuse_bd_prog(const struct lfs_config *cfg, lfs_block_t block,
-        lfs_off_t off, const void *buffer, lfs_size_t size) {
+int dbc_lfs_fuse_bd_prog(const struct dbc_lfs_config *cfg, dbc_lfs_block_t block,
+        dbc_lfs_off_t off, const void *buffer, dbc_lfs_size_t size) {
     int fd = (intptr_t)cfg->context;
     const uint8_t *buffer_ = buffer;
 
@@ -120,12 +120,12 @@ int lfs_fuse_bd_prog(const struct lfs_config *cfg, lfs_block_t block,
     return 0;
 }
 
-int lfs_fuse_bd_erase(const struct lfs_config *cfg, lfs_block_t block) {
+int dbc_lfs_fuse_bd_erase(const struct dbc_lfs_config *cfg, dbc_lfs_block_t block) {
     // do nothing
     return 0;
 }
 
-int lfs_fuse_bd_sync(const struct lfs_config *cfg) {
+int dbc_lfs_fuse_bd_sync(const struct dbc_lfs_config *cfg) {
     int fd = (intptr_t)cfg->context;
 
     int err = fsync(fd);

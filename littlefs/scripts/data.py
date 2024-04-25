@@ -5,7 +5,7 @@
 # by Linux's Bloat-O-Meter.
 #
 # Example:
-# ./scripts/data.py lfs.o lfs_util.o -Ssize
+# ./scripts/data.py lfs.o dbc_lfs_util.o -Ssize
 #
 # Copyright (c) 2022, The littlefs authors.
 # Copyright (c) 2020, Arm Limited. All rights reserved.

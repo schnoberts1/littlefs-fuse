@@ -112,10 +112,10 @@ jobs:
         run: |
           make clean
           CFLAGS="$CFLAGS \
-            -DLFS_NO_ASSERT \
-            -DLFS_NO_DEBUG \
-            -DLFS_NO_WARN \
-            -DLFS_NO_ERROR" \
+            -DDBC_LFS_NO_ASSERT \
+            -DDBC_LFS_NO_DEBUG \
+            -DDBC_LFS_NO_WARN \
+            -DDBC_LFS_NO_ERROR" \
             make lfs.code.csv lfs.data.csv lfs.stack.csv lfs.structs.csv
           ./scripts/structs.py -u lfs.structs.csv
           ./scripts/summary.py lfs.code.csv lfs.data.csv lfs.stack.csv \
@@ -132,11 +132,11 @@ jobs:
         run: |
           make clean
           CFLAGS="$CFLAGS \
-            -DLFS_NO_ASSERT \
-            -DLFS_NO_DEBUG \
-            -DLFS_NO_WARN \
-            -DLFS_NO_ERROR \
-            -DLFS_READONLY" \
+            -DDBC_LFS_NO_ASSERT \
+            -DDBC_LFS_NO_DEBUG \
+            -DDBC_LFS_NO_WARN \
+            -DDBC_LFS_NO_ERROR \
+            -DDBC_LFS_READONLY" \
             make lfs.code.csv lfs.data.csv lfs.stack.csv lfs.structs.csv
           ./scripts/structs.py -u lfs.structs.csv
           ./scripts/summary.py lfs.code.csv lfs.data.csv lfs.stack.csv \
@@ -153,11 +153,11 @@ jobs:
         run: |
           make clean
           CFLAGS="$CFLAGS \
-            -DLFS_NO_ASSERT \
-            -DLFS_NO_DEBUG \
-            -DLFS_NO_WARN \
-            -DLFS_NO_ERROR \
-            -DLFS_THREADSAFE" \
+            -DDBC_LFS_NO_ASSERT \
+            -DDBC_LFS_NO_DEBUG \
+            -DDBC_LFS_NO_WARN \
+            -DDBC_LFS_NO_ERROR \
+            -DDBC_LFS_THREADSAFE" \
             make lfs.code.csv lfs.data.csv lfs.stack.csv lfs.structs.csv
           ./scripts/structs.py -u lfs.structs.csv
           ./scripts/summary.py lfs.code.csv lfs.data.csv lfs.stack.csv \
@@ -174,11 +174,11 @@ jobs:
         run: |
           make clean
           CFLAGS="$CFLAGS \
-            -DLFS_NO_ASSERT \
-            -DLFS_NO_DEBUG \
-            -DLFS_NO_WARN \
-            -DLFS_NO_ERROR \
-            -DLFS_MULTIVERSION" \
+            -DDBC_LFS_NO_ASSERT \
+            -DDBC_LFS_NO_DEBUG \
+            -DDBC_LFS_NO_WARN \
+            -DDBC_LFS_NO_ERROR \
+            -DDBC_LFS_MULTIVERSION" \
             make lfs.code.csv lfs.data.csv lfs.stack.csv lfs.structs.csv
           ./scripts/structs.py -u lfs.structs.csv
           ./scripts/summary.py lfs.code.csv lfs.data.csv lfs.stack.csv \
@@ -195,11 +195,11 @@ jobs:
         run: |
           make clean
           CFLAGS="$CFLAGS \
-            -DLFS_NO_ASSERT \
-            -DLFS_NO_DEBUG \
-            -DLFS_NO_WARN \
-            -DLFS_NO_ERROR \
-            -DLFS_MIGRATE" \
+            -DDBC_LFS_NO_ASSERT \
+            -DDBC_LFS_NO_DEBUG \
+            -DDBC_LFS_NO_WARN \
+            -DDBC_LFS_NO_ERROR \
+            -DDBC_LFS_MIGRATE" \
             make lfs.code.csv lfs.data.csv lfs.stack.csv lfs.structs.csv
           ./scripts/structs.py -u lfs.structs.csv
           ./scripts/summary.py lfs.code.csv lfs.data.csv lfs.stack.csv \
@@ -216,10 +216,10 @@ jobs:
         run: |
           make clean
           CFLAGS="$CFLAGS \
-            -DLFS_NO_DEBUG \
-            -DLFS_NO_WARN \
-            -DLFS_NO_ERROR \
-            -D'LFS_ASSERT(test)=do {if(!(test)) {return -1;}} while(0)'" \
+            -DDBC_LFS_NO_DEBUG \
+            -DDBC_LFS_NO_WARN \
+            -DDBC_LFS_NO_ERROR \
+            -D'DBC_LFS_ASSERT(test)=do {if(!(test)) {return -1;}} while(0)'" \
             make lfs.code.csv lfs.data.csv lfs.stack.csv lfs.structs.csv
           ./scripts/structs.py -u lfs.structs.csv
           ./scripts/summary.py lfs.code.csv lfs.data.csv lfs.stack.csv \
@@ -357,7 +357,7 @@ jobs:
           TESTFLAGS="$TESTFLAGS -P${{matrix.pls}} test_dirs test_relocations" \
             make test
 
-  # run with LFS_NO_INTRINSICS to make sure that works
+  # run with DBC_LFS_NO_INTRINSICS to make sure that works
   test-no-intrinsics:
     runs-on: ubuntu-latest
     steps:
@@ -372,9 +372,9 @@ jobs:
           python3 --version
       - name: test-no-intrinsics
         run: |
-          CFLAGS="$CFLAGS -DLFS_NO_INTRINSICS" make test
+          CFLAGS="$CFLAGS -DDBC_LFS_NO_INTRINSICS" make test
 
-  # run LFS_MULTIVERSION tests
+  # run DBC_LFS_MULTIVERSION tests
   test-multiversion:
     runs-on: ubuntu-latest
     steps:
@@ -389,7 +389,7 @@ jobs:
           python3 --version
       - name: test-multiversion
         run: |
-          CFLAGS="$CFLAGS -DLFS_MULTIVERSION" make test
+          CFLAGS="$CFLAGS -DDBC_LFS_MULTIVERSION" make test
 
   # run tests on the older version lfs2.0
   test-lfs2_0:
@@ -406,7 +406,7 @@ jobs:
           python3 --version
       - name: test-lfs2_0
         run: |
-          CFLAGS="$CFLAGS -DLFS_MULTIVERSION" \
+          CFLAGS="$CFLAGS -DDBC_LFS_MULTIVERSION" \
           TESTFLAGS="$TESTFLAGS -DDISK_VERSION=0x00020000" \
             make test
 

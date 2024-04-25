@@ -4,7 +4,7 @@
 #
 # Example:
 # ./scripts/perf.py -R -obench.perf ./runners/bench_runner
-# ./scripts/perf.py bench.perf -j -Flfs.c -Flfs_util.c -Scycles
+# ./scripts/perf.py bench.perf -j -Flfs.c -Fdbc_lfs_util.c -Scycles
 #
 # Copyright (c) 2022, The littlefs authors.
 # SPDX-License-Identifier: BSD-3-Clause

@@ -8,20 +8,20 @@
 #define TEST_RUNNER_H
 
 
-// override LFS_TRACE
+// override DBC_LFS_TRACE
 void test_trace(const char *fmt, ...);
 
-#define LFS_TRACE_(fmt, ...) \
+#define DBC_LFS_TRACE_(fmt, ...) \
     test_trace("%s:%d:trace: " fmt "%s\n", \
         __FILE__, \
         __LINE__, \
         __VA_ARGS__)
-#define LFS_TRACE(...) LFS_TRACE_(__VA_ARGS__, "")
-#define LFS_EMUBD_TRACE(...) LFS_TRACE_(__VA_ARGS__, "")
+#define DBC_LFS_TRACE(...) DBC_LFS_TRACE_(__VA_ARGS__, "")
+#define DBC_LFS_EMUBD_TRACE(...) DBC_LFS_TRACE_(__VA_ARGS__, "")
 
 
 // note these are indirectly included in any generated files
-#include "bd/lfs_emubd.h"
+#include "bd/dbc_lfs_emubd.h"
 #include <stdio.h>
 
 // give source a chance to define feature macros
@@ -30,7 +30,7 @@ void test_trace(const char *fmt, ...);
 
 
 // generated test configurations
-struct lfs_config;
+struct dbc_lfs_config;
 
 enum test_flags {
     TEST_REENTRANT = 0x1,
@@ -51,7 +51,7 @@ struct test_case {
     const test_define_t *defines;
 
     bool (*filter)(void);
-    void (*run)(struct lfs_config *cfg);
+    void (*run)(struct dbc_lfs_config *cfg);
 };
 
 struct test_suite {
@@ -120,16 +120,16 @@ intmax_t test_define(size_t define);
     TEST_DEF(ERASE_SIZE,         0) \
     TEST_DEF(ERASE_COUNT,        (1024*1024)/ERASE_SIZE) \
     TEST_DEF(BLOCK_SIZE,         ERASE_SIZE) \
-    TEST_DEF(BLOCK_COUNT,        ERASE_COUNT/lfs_max(BLOCK_SIZE/ERASE_SIZE,1)) \
-    TEST_DEF(CACHE_SIZE,         lfs_max(64,lfs_max(READ_SIZE,PROG_SIZE))) \
+    TEST_DEF(BLOCK_COUNT,        ERASE_COUNT/dbc_lfs_max(BLOCK_SIZE/ERASE_SIZE,1)) \
+    TEST_DEF(CACHE_SIZE,         dbc_lfs_max(64,dbc_lfs_max(READ_SIZE,PROG_SIZE))) \
     TEST_DEF(LOOKAHEAD_SIZE,     16) \
     TEST_DEF(COMPACT_THRESH,     0) \
     TEST_DEF(INLINE_MAX,         0) \
     TEST_DEF(BLOCK_CYCLES,       -1) \
     TEST_DEF(ERASE_VALUE,        0xff) \
     TEST_DEF(ERASE_CYCLES,       0) \
-    TEST_DEF(BADBLOCK_BEHAVIOR,  LFS_EMUBD_BADBLOCK_PROGERROR) \
-    TEST_DEF(POWERLOSS_BEHAVIOR, LFS_EMUBD_POWERLOSS_NOOP) \
+    TEST_DEF(BADBLOCK_BEHAVIOR,  DBC_LFS_EMUBD_BADBLOCK_PROGERROR) \
+    TEST_DEF(POWERLOSS_BEHAVIOR, DBC_LFS_EMUBD_POWERLOSS_NOOP) \
     TEST_DEF(DISK_VERSION,       0)
 
 #define TEST_GEOMETRY_DEFINE_COUNT 4

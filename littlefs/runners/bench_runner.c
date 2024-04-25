@@ -9,7 +9,7 @@
 #endif
 
 #include "runners/bench_runner.h"
-#include "bd/lfs_emubd.h"
+#include "bd/dbc_lfs_emubd.h"
 
 #include <getopt.h>
 #include <sys/types.h>
@@ -297,11 +297,11 @@ void bench_define_suite(const struct bench_suite *suite) {
             suite->define_names, suite->define_count};
 
     // make sure our cache is large enough
-    if (lfs_max(suite->define_count, BENCH_IMPLICIT_DEFINE_COUNT)
+    if (dbc_lfs_max(suite->define_count, BENCH_IMPLICIT_DEFINE_COUNT)
             > bench_define_cache_count) {
         // align to power of two to avoid any superlinear growth
-        size_t ncount = 1 << lfs_npw2(
-                lfs_max(suite->define_count, BENCH_IMPLICIT_DEFINE_COUNT));
+        size_t ncount = 1 << dbc_lfs_npw2(
+                dbc_lfs_max(suite->define_count, BENCH_IMPLICIT_DEFINE_COUNT));
         bench_define_cache = realloc(bench_define_cache, ncount*sizeof(intmax_t));
         bench_define_cache_mask = realloc(bench_define_cache_mask,
                 sizeof(unsigned)*(
@@ -317,14 +317,14 @@ void bench_define_suite(const struct bench_suite *suite) {
         size_t permutations = 1;
         for (size_t i = 0; i < bench_override_count; i++) {
             for (size_t d = 0;
-                    d < lfs_max(
+                    d < dbc_lfs_max(
                         suite->define_count,
                         BENCH_IMPLICIT_DEFINE_COUNT);
                     d++) {
                 // define name match?
                 const char *name = bench_define_name(d);
                 if (name && strcmp(name, bench_overrides[i].name) == 0) {
-                    count = lfs_max(count, d+1);
+                    count = dbc_lfs_max(count, d+1);
                     permutations *= bench_overrides[i].permutations;
                     break;
                 }
@@ -336,7 +336,7 @@ void bench_define_suite(const struct bench_suite *suite) {
         // make sure our override arrays are big enough
         if (count * permutations > bench_override_define_capacity) {
             // align to power of two to avoid any superlinear growth
-            size_t ncapacity = 1 << lfs_npw2(count * permutations);
+            size_t ncapacity = 1 << dbc_lfs_npw2(count * permutations);
             bench_override_defines = realloc(
                     bench_override_defines,
                     sizeof(bench_define_t)*ncapacity);
@@ -351,7 +351,7 @@ void bench_define_suite(const struct bench_suite *suite) {
         size_t p = 1;
         for (size_t i = 0; i < bench_override_count; i++) {
             for (size_t d = 0;
-                    d < lfs_max(
+                    d < dbc_lfs_max(
                         suite->define_count,
                         BENCH_IMPLICIT_DEFINE_COUNT);
                     d++) {
@@ -433,9 +433,9 @@ FILE *bench_trace_file = NULL;
 uint32_t bench_trace_cycles = 0;
 uint64_t bench_trace_time = 0;
 uint64_t bench_trace_open_time = 0;
-lfs_emubd_sleep_t bench_read_sleep = 0.0;
-lfs_emubd_sleep_t bench_prog_sleep = 0.0;
-lfs_emubd_sleep_t bench_erase_sleep = 0.0;
+dbc_lfs_emubd_sleep_t bench_read_sleep = 0.0;
+dbc_lfs_emubd_sleep_t bench_prog_sleep = 0.0;
+dbc_lfs_emubd_sleep_t bench_erase_sleep = 0.0;
 
 // this determines both the backtrace buffer and the trace printf buffer, if
 // trace ends up interleaved or truncated this may need to be increased
@@ -557,13 +557,13 @@ uint32_t bench_prng(uint32_t *state) {
 
 
 // bench recording state
-static struct lfs_config *bench_cfg = NULL;
-static lfs_emubd_io_t bench_last_readed = 0;
-static lfs_emubd_io_t bench_last_proged = 0;
-static lfs_emubd_io_t bench_last_erased = 0;
-lfs_emubd_io_t bench_readed = 0;
-lfs_emubd_io_t bench_proged = 0;
-lfs_emubd_io_t bench_erased = 0;
+static struct dbc_lfs_config *bench_cfg = NULL;
+static dbc_lfs_emubd_io_t bench_last_readed = 0;
+static dbc_lfs_emubd_io_t bench_last_proged = 0;
+static dbc_lfs_emubd_io_t bench_last_erased = 0;
+dbc_lfs_emubd_io_t bench_readed = 0;
+dbc_lfs_emubd_io_t bench_proged = 0;
+dbc_lfs_emubd_io_t bench_erased = 0;
 
 void bench_reset(void) {
     bench_readed = 0;
@@ -576,11 +576,11 @@ void bench_reset(void) {
 
 void bench_start(void) {
     assert(bench_cfg);
-    lfs_emubd_sio_t readed = lfs_emubd_readed(bench_cfg);
+    dbc_lfs_emubd_sio_t readed = dbc_lfs_emubd_readed(bench_cfg);
     assert(readed >= 0);
-    lfs_emubd_sio_t proged = lfs_emubd_proged(bench_cfg);
+    dbc_lfs_emubd_sio_t proged = dbc_lfs_emubd_proged(bench_cfg);
     assert(proged >= 0);
-    lfs_emubd_sio_t erased = lfs_emubd_erased(bench_cfg);
+    dbc_lfs_emubd_sio_t erased = dbc_lfs_emubd_erased(bench_cfg);
     assert(erased >= 0);
 
     bench_last_readed = readed;
@@ -590,11 +590,11 @@ void bench_start(void) {
 
 void bench_stop(void) {
     assert(bench_cfg);
-    lfs_emubd_sio_t readed = lfs_emubd_readed(bench_cfg);
+    dbc_lfs_emubd_sio_t readed = dbc_lfs_emubd_readed(bench_cfg);
     assert(readed >= 0);
-    lfs_emubd_sio_t proged = lfs_emubd_proged(bench_cfg);
+    dbc_lfs_emubd_sio_t proged = dbc_lfs_emubd_proged(bench_cfg);
     assert(proged >= 0);
-    lfs_emubd_sio_t erased = lfs_emubd_erased(bench_cfg);
+    dbc_lfs_emubd_sio_t erased = dbc_lfs_emubd_erased(bench_cfg);
     assert(erased >= 0);
 
     bench_readed += readed - bench_last_readed;
@@ -611,7 +611,7 @@ static void perm_printid(
     // case[:permutation]
     printf("%s:", case_->name);
     for (size_t d = 0;
-            d < lfs_max(
+            d < dbc_lfs_max(
                 suite->define_count,
                 BENCH_IMPLICIT_DEFINE_COUNT);
             d++) {
@@ -643,7 +643,7 @@ bool bench_seen_insert(
 
     // use the currently set defines
     for (size_t d = 0;
-            d < lfs_max(
+            d < dbc_lfs_max(
                 suite->define_count,
                 BENCH_IMPLICIT_DEFINE_COUNT);
             d++) {
@@ -1071,7 +1071,7 @@ void perm_list_defines(
 
     // collect defines
     for (size_t d = 0;
-            d < lfs_max(suite->define_count,
+            d < dbc_lfs_max(suite->define_count,
                 BENCH_IMPLICIT_DEFINE_COUNT);
             d++) {
         if (d < BENCH_IMPLICIT_DEFINE_COUNT
@@ -1091,7 +1091,7 @@ void perm_list_permutation_defines(
 
     // collect permutation_defines
     for (size_t d = 0;
-            d < lfs_max(suite->define_count,
+            d < dbc_lfs_max(suite->define_count,
                 BENCH_IMPLICIT_DEFINE_COUNT);
             d++) {
         if (bench_define_ispermutation(d)) {
@@ -1306,14 +1306,14 @@ void perm_run(
     }
 
     // create block device and configuration
-    lfs_emubd_t bd;
+    dbc_lfs_emubd_t bd;
 
-    struct lfs_config cfg = {
+    struct dbc_lfs_config cfg = {
         .context            = &bd,
-        .read               = lfs_emubd_read,
-        .prog               = lfs_emubd_prog,
-        .erase              = lfs_emubd_erase,
-        .sync               = lfs_emubd_sync,
+        .read               = dbc_lfs_emubd_read,
+        .prog               = dbc_lfs_emubd_prog,
+        .erase              = dbc_lfs_emubd_erase,
+        .sync               = dbc_lfs_emubd_sync,
         .read_size          = READ_SIZE,
         .prog_size          = PROG_SIZE,
         .block_size         = BLOCK_SIZE,
@@ -1325,7 +1325,7 @@ void perm_run(
         .inline_max         = INLINE_MAX,
     };
 
-    struct lfs_emubd_config bdcfg = {
+    struct dbc_lfs_emubd_config bdcfg = {
         .read_size          = READ_SIZE,
         .prog_size          = PROG_SIZE,
         .erase_size         = ERASE_SIZE,
@@ -1339,7 +1339,7 @@ void perm_run(
         .erase_sleep        = bench_erase_sleep,
     };
 
-    int err = lfs_emubd_create(&cfg, &bdcfg);
+    int err = dbc_lfs_emubd_create(&cfg, &bdcfg);
     if (err) {
         fprintf(stderr, "error: could not create block device: %d\n", err);
         exit(-1);
@@ -1363,7 +1363,7 @@ void perm_run(
     printf("\n");
 
     // cleanup
-    err = lfs_emubd_destroy(&cfg);
+    err = dbc_lfs_emubd_destroy(&cfg);
     if (err) {
         fprintf(stderr, "error: could not destroy block device: %d\n", err);
         exit(-1);
@@ -1739,7 +1739,7 @@ invalid_define:
 
                     // comma-separated read/prog/erase/count
                     if (*optarg == '{') {
-                        lfs_size_t sizes[4];
+                        dbc_lfs_size_t sizes[4];
                         size_t count = 0;
 
                         char *s = optarg + 1;
@@ -1788,7 +1788,7 @@ invalid_define:
 
                     // leb16-encoded read/prog/erase/count
                     if (*optarg == ':') {
-                        lfs_size_t sizes[4];
+                        dbc_lfs_size_t sizes[4];
                         size_t count = 0;
 
                         char *s = optarg + 1;
@@ -2011,7 +2011,7 @@ getopt_done: ;
 
                 if (d >= define_count) {
                     // align to power of two to avoid any superlinear growth
-                    size_t ncount = 1 << lfs_npw2(d+1);
+                    size_t ncount = 1 << dbc_lfs_npw2(d+1);
                     defines = realloc(defines,
                             ncount*sizeof(bench_define_t));
                     memset(defines+define_count, 0,

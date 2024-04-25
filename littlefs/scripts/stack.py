@@ -4,7 +4,7 @@
 # report as infinite stack usage.
 #
 # Example:
-# ./scripts/stack.py lfs.ci lfs_util.ci -Slimit
+# ./scripts/stack.py lfs.ci dbc_lfs_util.ci -Slimit
 #
 # Copyright (c) 2022, The littlefs authors.
 # SPDX-License-Identifier: BSD-3-Clause

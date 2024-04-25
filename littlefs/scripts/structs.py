@@ -3,7 +3,7 @@
 # Script to find struct sizes.
 #
 # Example:
-# ./scripts/structs.py lfs.o lfs_util.o -Ssize
+# ./scripts/structs.py lfs.o dbc_lfs_util.o -Ssize
 #
 # Copyright (c) 2022, The littlefs authors.
 # SPDX-License-Identifier: BSD-3-Clause

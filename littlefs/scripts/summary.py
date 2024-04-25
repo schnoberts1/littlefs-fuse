@@ -3,8 +3,8 @@
 # Script to summarize the outputs of other scripts. Operates on CSV files.
 #
 # Example:
-# ./scripts/code.py lfs.o lfs_util.o -q -o lfs.code.csv
-# ./scripts/data.py lfs.o lfs_util.o -q -o lfs.data.csv
+# ./scripts/code.py lfs.o dbc_lfs_util.o -q -o lfs.code.csv
+# ./scripts/data.py lfs.o dbc_lfs_util.o -q -o lfs.data.csv
 # ./scripts/summary.py lfs.code.csv lfs.data.csv -q -o lfs.csv
 # ./scripts/summary.py -Y lfs.csv -f code=code_size,data=data_size
 #

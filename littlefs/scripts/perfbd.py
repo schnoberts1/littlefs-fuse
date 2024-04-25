@@ -5,7 +5,7 @@
 #
 # Example:
 # ./scripts/bench.py -ttrace
-# ./scripts/perfbd.py trace -j -Flfs.c -Flfs_util.c -Serased -Sproged -Sreaded
+# ./scripts/perfbd.py trace -j -Flfs.c -Fdbc_lfs_util.c -Serased -Sproged -Sreaded
 #
 # Copyright (c) 2022, The littlefs authors.
 # SPDX-License-Identifier: BSD-3-Clause

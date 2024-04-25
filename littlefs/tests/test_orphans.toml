@@ -2,24 +2,24 @@
 in = "lfs.c"
 if = 'PROG_SIZE <= 0x3fe' # only works with one crc per commit
 code = '''
-    lfs_t lfs;
-    lfs_format(&lfs, cfg) => 0;
-    lfs_mount(&lfs, cfg) => 0;
-    lfs_mkdir(&lfs, "parent") => 0;
-    lfs_mkdir(&lfs, "parent/orphan") => 0;
-    lfs_mkdir(&lfs, "parent/child") => 0;
-    lfs_remove(&lfs, "parent/orphan") => 0;
-    lfs_unmount(&lfs) => 0;
+    dbc_lfs_t lfs;
+    dbc_lfs_format(&lfs, cfg) => 0;
+    dbc_lfs_mount(&lfs, cfg) => 0;
+    dbc_lfs_mkdir(&lfs, "parent") => 0;
+    dbc_lfs_mkdir(&lfs, "parent/orphan") => 0;
+    dbc_lfs_mkdir(&lfs, "parent/child") => 0;
+    dbc_lfs_remove(&lfs, "parent/orphan") => 0;
+    dbc_lfs_unmount(&lfs) => 0;
 
     // corrupt the child's most recent commit, this should be the update
     // to the linked-list entry, which should orphan the orphan. Note this
     // makes a lot of assumptions about the remove operation.
-    lfs_mount(&lfs, cfg) => 0;
-    lfs_dir_t dir;
-    lfs_dir_open(&lfs, &dir, "parent/child") => 0;
-    lfs_block_t block = dir.m.pair[0];
-    lfs_dir_close(&lfs, &dir) => 0;
-    lfs_unmount(&lfs) => 0;
+    dbc_lfs_mount(&lfs, cfg) => 0;
+    dbc_lfs_dir_t dir;
+    dbc_lfs_dir_open(&lfs, &dir, "parent/child") => 0;
+    dbc_lfs_block_t block = dir.m.pair[0];
+    dbc_lfs_dir_close(&lfs, &dir) => 0;
+    dbc_lfs_unmount(&lfs) => 0;
     uint8_t buffer[BLOCK_SIZE];
     cfg->read(cfg, block, 0, buffer, BLOCK_SIZE) => 0;
     int off = BLOCK_SIZE-1;
@@ -31,176 +31,176 @@ code = '''
     cfg->prog(cfg, block, 0, buffer, BLOCK_SIZE) => 0;
     cfg->sync(cfg) => 0;
 
-    lfs_mount(&lfs, cfg) => 0;
-    struct lfs_info info;
-    lfs_stat(&lfs, "parent/orphan", &info) => LFS_ERR_NOENT;
-    lfs_stat(&lfs, "parent/child", &info) => 0;
-    lfs_fs_size(&lfs) => 8;
-    lfs_unmount(&lfs) => 0;
+    dbc_lfs_mount(&lfs, cfg) => 0;
+    struct dbc_lfs_info info;
+    dbc_lfs_stat(&lfs, "parent/orphan", &info) => DBC_LFS_ERR_NOENT;
+    dbc_lfs_stat(&lfs, "parent/child", &info) => 0;
+    dbc_lfs_fs_size(&lfs) => 8;
+    dbc_lfs_unmount(&lfs) => 0;
 
-    lfs_mount(&lfs, cfg) => 0;
-    lfs_stat(&lfs, "parent/orphan", &info) => LFS_ERR_NOENT;
-    lfs_stat(&lfs, "parent/child", &info) => 0;
-    lfs_fs_size(&lfs) => 8;
+    dbc_lfs_mount(&lfs, cfg) => 0;
+    dbc_lfs_stat(&lfs, "parent/orphan", &info) => DBC_LFS_ERR_NOENT;
+    dbc_lfs_stat(&lfs, "parent/child", &info) => 0;
+    dbc_lfs_fs_size(&lfs) => 8;
     // this mkdir should both create a dir and deorphan, so size
     // should be unchanged
-    lfs_mkdir(&lfs, "parent/otherchild") => 0;
-    lfs_stat(&lfs, "parent/orphan", &info) => LFS_ERR_NOENT;
-    lfs_stat(&lfs, "parent/child", &info) => 0;
-    lfs_stat(&lfs, "parent/otherchild", &info) => 0;
-    lfs_fs_size(&lfs) => 8;
-    lfs_unmount(&lfs) => 0;
+    dbc_lfs_mkdir(&lfs, "parent/otherchild") => 0;
+    dbc_lfs_stat(&lfs, "parent/orphan", &info) => DBC_LFS_ERR_NOENT;
+    dbc_lfs_stat(&lfs, "parent/child", &info) => 0;
+    dbc_lfs_stat(&lfs, "parent/otherchild", &info) => 0;
+    dbc_lfs_fs_size(&lfs) => 8;
+    dbc_lfs_unmount(&lfs) => 0;
 
-    lfs_mount(&lfs, cfg) => 0;
-    lfs_stat(&lfs, "parent/orphan", &info) => LFS_ERR_NOENT;
-    lfs_stat(&lfs, "parent/child", &info) => 0;
-    lfs_stat(&lfs, "parent/otherchild", &info) => 0;
-    lfs_fs_size(&lfs) => 8;
-    lfs_unmount(&lfs) => 0;
+    dbc_lfs_mount(&lfs, cfg) => 0;
+    dbc_lfs_stat(&lfs, "parent/orphan", &info) => DBC_LFS_ERR_NOENT;
+    dbc_lfs_stat(&lfs, "parent/child", &info) => 0;
+    dbc_lfs_stat(&lfs, "parent/otherchild", &info) => 0;
+    dbc_lfs_fs_size(&lfs) => 8;
+    dbc_lfs_unmount(&lfs) => 0;
 '''
 
 # test that we only run deorphan once per power-cycle
 [cases.test_orphans_no_orphans]
 in = 'lfs.c'
 code = '''
-    lfs_t lfs;
-    lfs_format(&lfs, cfg) => 0;
+    dbc_lfs_t lfs;
+    dbc_lfs_format(&lfs, cfg) => 0;
 
-    lfs_mount(&lfs, cfg) => 0;
+    dbc_lfs_mount(&lfs, cfg) => 0;
     // mark the filesystem as having orphans
-    lfs_fs_preporphans(&lfs, +1) => 0;
-    lfs_mdir_t mdir;
-    lfs_dir_fetch(&lfs, &mdir, (lfs_block_t[2]){0, 1}) => 0;
-    lfs_dir_commit(&lfs, &mdir, NULL, 0) => 0;
+    dbc_lfs_fs_preporphans(&lfs, +1) => 0;
+    dbc_lfs_mdir_t mdir;
+    dbc_lfs_dir_fetch(&lfs, &mdir, (dbc_lfs_block_t[2]){0, 1}) => 0;
+    dbc_lfs_dir_commit(&lfs, &mdir, NULL, 0) => 0;
 
     // we should have orphans at this state
-    assert(lfs_gstate_hasorphans(&lfs.gstate));
-    lfs_unmount(&lfs) => 0;
+    assert(dbc_lfs_gstate_hasorphans(&lfs.gstate));
+    dbc_lfs_unmount(&lfs) => 0;
 
     // mount
-    lfs_mount(&lfs, cfg) => 0;
+    dbc_lfs_mount(&lfs, cfg) => 0;
     // we should detect orphans
-    assert(lfs_gstate_hasorphans(&lfs.gstate));
+    assert(dbc_lfs_gstate_hasorphans(&lfs.gstate));
     // force consistency
-    lfs_fs_forceconsistency(&lfs) => 0;
+    dbc_lfs_fs_forceconsistency(&lfs) => 0;
     // we should no longer have orphans
-    assert(!lfs_gstate_hasorphans(&lfs.gstate));
+    assert(!dbc_lfs_gstate_hasorphans(&lfs.gstate));
 
-    lfs_unmount(&lfs) => 0;
+    dbc_lfs_unmount(&lfs) => 0;
 '''
 
 [cases.test_orphans_one_orphan]
 in = 'lfs.c'
 code = '''
-    lfs_t lfs;
-    lfs_format(&lfs, cfg) => 0;
+    dbc_lfs_t lfs;
+    dbc_lfs_format(&lfs, cfg) => 0;
 
-    lfs_mount(&lfs, cfg) => 0;
+    dbc_lfs_mount(&lfs, cfg) => 0;
     // create an orphan
-    lfs_mdir_t orphan;
-    lfs_alloc_ckpoint(&lfs);
-    lfs_dir_alloc(&lfs, &orphan) => 0;
-    lfs_dir_commit(&lfs, &orphan, NULL, 0) => 0;
+    dbc_lfs_mdir_t orphan;
+    dbc_lfs_alloc_ckpoint(&lfs);
+    dbc_lfs_dir_alloc(&lfs, &orphan) => 0;
+    dbc_lfs_dir_commit(&lfs, &orphan, NULL, 0) => 0;
 
     // append our orphan and mark the filesystem as having orphans
-    lfs_fs_preporphans(&lfs, +1) => 0;
-    lfs_mdir_t mdir;
-    lfs_dir_fetch(&lfs, &mdir, (lfs_block_t[2]){0, 1}) => 0;
-    lfs_pair_tole32(orphan.pair);
-    lfs_dir_commit(&lfs, &mdir, LFS_MKATTRS(
-            {LFS_MKTAG(LFS_TYPE_SOFTTAIL, 0x3ff, 8), orphan.pair})) => 0;
+    dbc_lfs_fs_preporphans(&lfs, +1) => 0;
+    dbc_lfs_mdir_t mdir;
+    dbc_lfs_dir_fetch(&lfs, &mdir, (dbc_lfs_block_t[2]){0, 1}) => 0;
+    dbc_lfs_pair_tole32(orphan.pair);
+    dbc_lfs_dir_commit(&lfs, &mdir, DBC_LFS_MKATTRS(
+            {DBC_LFS_MKTAG(DBC_LFS_TYPE_SOFTTAIL, 0x3ff, 8), orphan.pair})) => 0;
 
     // we should have orphans at this state
-    assert(lfs_gstate_hasorphans(&lfs.gstate));
-    lfs_unmount(&lfs) => 0;
+    assert(dbc_lfs_gstate_hasorphans(&lfs.gstate));
+    dbc_lfs_unmount(&lfs) => 0;
 
     // mount
-    lfs_mount(&lfs, cfg) => 0;
+    dbc_lfs_mount(&lfs, cfg) => 0;
     // we should detect orphans
-    assert(lfs_gstate_hasorphans(&lfs.gstate));
+    assert(dbc_lfs_gstate_hasorphans(&lfs.gstate));
     // force consistency
-    lfs_fs_forceconsistency(&lfs) => 0;
+    dbc_lfs_fs_forceconsistency(&lfs) => 0;
     // we should no longer have orphans
-    assert(!lfs_gstate_hasorphans(&lfs.gstate));
+    assert(!dbc_lfs_gstate_hasorphans(&lfs.gstate));
 
-    lfs_unmount(&lfs) => 0;
+    dbc_lfs_unmount(&lfs) => 0;
 '''
 
-# test that we can persist gstate with lfs_fs_mkconsistent
+# test that we can persist gstate with dbc_lfs_fs_mkconsistent
 [cases.test_orphans_mkconsistent_no_orphans]
 in = 'lfs.c'
 code = '''
-    lfs_t lfs;
-    lfs_format(&lfs, cfg) => 0;
+    dbc_lfs_t lfs;
+    dbc_lfs_format(&lfs, cfg) => 0;
 
-    lfs_mount(&lfs, cfg) => 0;
+    dbc_lfs_mount(&lfs, cfg) => 0;
     // mark the filesystem as having orphans
-    lfs_fs_preporphans(&lfs, +1) => 0;
-    lfs_mdir_t mdir;
-    lfs_dir_fetch(&lfs, &mdir, (lfs_block_t[2]){0, 1}) => 0;
-    lfs_dir_commit(&lfs, &mdir, NULL, 0) => 0;
+    dbc_lfs_fs_preporphans(&lfs, +1) => 0;
+    dbc_lfs_mdir_t mdir;
+    dbc_lfs_dir_fetch(&lfs, &mdir, (dbc_lfs_block_t[2]){0, 1}) => 0;
+    dbc_lfs_dir_commit(&lfs, &mdir, NULL, 0) => 0;
 
     // we should have orphans at this state
-    assert(lfs_gstate_hasorphans(&lfs.gstate));
-    lfs_unmount(&lfs) => 0;
+    assert(dbc_lfs_gstate_hasorphans(&lfs.gstate));
+    dbc_lfs_unmount(&lfs) => 0;
 
     // mount
-    lfs_mount(&lfs, cfg) => 0;
+    dbc_lfs_mount(&lfs, cfg) => 0;
     // we should detect orphans
-    assert(lfs_gstate_hasorphans(&lfs.gstate));
+    assert(dbc_lfs_gstate_hasorphans(&lfs.gstate));
     // force consistency
-    lfs_fs_mkconsistent(&lfs) => 0;
+    dbc_lfs_fs_mkconsistent(&lfs) => 0;
     // we should no longer have orphans
-    assert(!lfs_gstate_hasorphans(&lfs.gstate));
+    assert(!dbc_lfs_gstate_hasorphans(&lfs.gstate));
 
     // remount
-    lfs_unmount(&lfs) => 0;
-    lfs_mount(&lfs, cfg) => 0;
+    dbc_lfs_unmount(&lfs) => 0;
+    dbc_lfs_mount(&lfs, cfg) => 0;
     // we should still have no orphans
-    assert(!lfs_gstate_hasorphans(&lfs.gstate));
-    lfs_unmount(&lfs) => 0;
+    assert(!dbc_lfs_gstate_hasorphans(&lfs.gstate));
+    dbc_lfs_unmount(&lfs) => 0;
 '''
 
 [cases.test_orphans_mkconsistent_one_orphan]
 in = 'lfs.c'
 code = '''
-    lfs_t lfs;
-    lfs_format(&lfs, cfg) => 0;
+    dbc_lfs_t lfs;
+    dbc_lfs_format(&lfs, cfg) => 0;
 
-    lfs_mount(&lfs, cfg) => 0;
+    dbc_lfs_mount(&lfs, cfg) => 0;
     // create an orphan
-    lfs_mdir_t orphan;
-    lfs_alloc_ckpoint(&lfs);
-    lfs_dir_alloc(&lfs, &orphan) => 0;
-    lfs_dir_commit(&lfs, &orphan, NULL, 0) => 0;
+    dbc_lfs_mdir_t orphan;
+    dbc_lfs_alloc_ckpoint(&lfs);
+    dbc_lfs_dir_alloc(&lfs, &orphan) => 0;
+    dbc_lfs_dir_commit(&lfs, &orphan, NULL, 0) => 0;
 
     // append our orphan and mark the filesystem as having orphans
-    lfs_fs_preporphans(&lfs, +1) => 0;
-    lfs_mdir_t mdir;
-    lfs_dir_fetch(&lfs, &mdir, (lfs_block_t[2]){0, 1}) => 0;
-    lfs_pair_tole32(orphan.pair);
-    lfs_dir_commit(&lfs, &mdir, LFS_MKATTRS(
-            {LFS_MKTAG(LFS_TYPE_SOFTTAIL, 0x3ff, 8), orphan.pair})) => 0;
+    dbc_lfs_fs_preporphans(&lfs, +1) => 0;
+    dbc_lfs_mdir_t mdir;
+    dbc_lfs_dir_fetch(&lfs, &mdir, (dbc_lfs_block_t[2]){0, 1}) => 0;
+    dbc_lfs_pair_tole32(orphan.pair);
+    dbc_lfs_dir_commit(&lfs, &mdir, DBC_LFS_MKATTRS(
+            {DBC_LFS_MKTAG(DBC_LFS_TYPE_SOFTTAIL, 0x3ff, 8), orphan.pair})) => 0;
 
     // we should have orphans at this state
-    assert(lfs_gstate_hasorphans(&lfs.gstate));
-    lfs_unmount(&lfs) => 0;
+    assert(dbc_lfs_gstate_hasorphans(&lfs.gstate));
+    dbc_lfs_unmount(&lfs) => 0;
 
     // mount
-    lfs_mount(&lfs, cfg) => 0;
+    dbc_lfs_mount(&lfs, cfg) => 0;
     // we should detect orphans
-    assert(lfs_gstate_hasorphans(&lfs.gstate));
+    assert(dbc_lfs_gstate_hasorphans(&lfs.gstate));
     // force consistency
-    lfs_fs_mkconsistent(&lfs) => 0;
+    dbc_lfs_fs_mkconsistent(&lfs) => 0;
     // we should no longer have orphans
-    assert(!lfs_gstate_hasorphans(&lfs.gstate));
+    assert(!dbc_lfs_gstate_hasorphans(&lfs.gstate));
 
     // remount
-    lfs_unmount(&lfs) => 0;
-    lfs_mount(&lfs, cfg) => 0;
+    dbc_lfs_unmount(&lfs) => 0;
+    dbc_lfs_mount(&lfs, cfg) => 0;
     // we should still have no orphans
-    assert(!lfs_gstate_hasorphans(&lfs.gstate));
-    lfs_unmount(&lfs) => 0;
+    assert(!dbc_lfs_gstate_hasorphans(&lfs.gstate));
+    dbc_lfs_unmount(&lfs) => 0;
 '''
 
 # reentrant testing for orphans, basically just spam mkdir/remove
@@ -214,11 +214,11 @@ defines = [
     {FILES=3,  DEPTH=3, CYCLES=20},
 ]
 code = '''
-    lfs_t lfs;
-    int err = lfs_mount(&lfs, cfg);
+    dbc_lfs_t lfs;
+    int err = dbc_lfs_mount(&lfs, cfg);
     if (err) {
-        lfs_format(&lfs, cfg) => 0;
-        lfs_mount(&lfs, cfg) => 0;
+        dbc_lfs_format(&lfs, cfg) => 0;
+        dbc_lfs_mount(&lfs, cfg) => 0;
     }
 
     uint32_t prng = 1;
@@ -231,43 +231,43 @@ code = '''
         }
 
         // if it does not exist, we create it, else we destroy
-        struct lfs_info info;
-        int res = lfs_stat(&lfs, full_path, &info);
-        if (res == LFS_ERR_NOENT) {
+        struct dbc_lfs_info info;
+        int res = dbc_lfs_stat(&lfs, full_path, &info);
+        if (res == DBC_LFS_ERR_NOENT) {
             // create each directory in turn, ignore if dir already exists
             for (unsigned d = 0; d < DEPTH; d++) {
                 char path[1024];
                 strcpy(path, full_path);
                 path[2*d+2] = '\0';
-                err = lfs_mkdir(&lfs, path);
-                assert(!err || err == LFS_ERR_EXIST);
+                err = dbc_lfs_mkdir(&lfs, path);
+                assert(!err || err == DBC_LFS_ERR_EXIST);
             }
 
             for (unsigned d = 0; d < DEPTH; d++) {
                 char path[1024];
                 strcpy(path, full_path);
                 path[2*d+2] = '\0';
-                lfs_stat(&lfs, path, &info) => 0;
+                dbc_lfs_stat(&lfs, path, &info) => 0;
                 assert(strcmp(info.name, &path[2*d+1]) == 0);
-                assert(info.type == LFS_TYPE_DIR);
+                assert(info.type == DBC_LFS_TYPE_DIR);
             }
         } else {
             // is valid dir?
             assert(strcmp(info.name, &full_path[2*(DEPTH-1)+1]) == 0);
-            assert(info.type == LFS_TYPE_DIR);
+            assert(info.type == DBC_LFS_TYPE_DIR);
 
             // try to delete path in reverse order, ignore if dir is not empty
             for (int d = DEPTH-1; d >= 0; d--) {
                 char path[1024];
                 strcpy(path, full_path);
                 path[2*d+2] = '\0';
-                err = lfs_remove(&lfs, path);
-                assert(!err || err == LFS_ERR_NOTEMPTY);
+                err = dbc_lfs_remove(&lfs, path);
+                assert(!err || err == DBC_LFS_ERR_NOTEMPTY);
             }
 
-            lfs_stat(&lfs, full_path, &info) => LFS_ERR_NOENT;
+            dbc_lfs_stat(&lfs, full_path, &info) => DBC_LFS_ERR_NOENT;
         }
     }
-    lfs_unmount(&lfs) => 0;
+    dbc_lfs_unmount(&lfs) => 0;
 '''
 
