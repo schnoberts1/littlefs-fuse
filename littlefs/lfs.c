@@ -1158,6 +1158,7 @@ static dbc_lfs_stag_t dbc_lfs_dir_fetchmatch(dbc_lfs_t *lfs,
                     dir->pair[0], off, &tag, sizeof(tag));
             if (err) {
                 if (err == DBC_LFS_ERR_CORRUPT) {
+                    // No more space in the block to search for a dtag
                     // can't continue?
                     break;
                 }
